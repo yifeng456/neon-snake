@@ -27,6 +27,29 @@ body {
   min-height: 100vh;
 }
 
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(620px 620px at 15% 18%, rgba(0, 229, 255, 0.12), transparent 60%),
+    radial-gradient(720px 720px at 85% 82%, rgba(255, 63, 164, 0.12), transparent 60%);
+  animation: aurora 14s ease-in-out infinite alternate;
+}
+
+@keyframes aurora {
+  0% {
+    opacity: 0.55;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, -32px, 0) scale(1.08);
+  }
+}
+
 .app {
   min-height: 100vh;
   display: flex;
@@ -60,8 +83,8 @@ body {
   padding: 6px 12px;
   border: 1px solid rgba(0, 229, 255, 0.25);
   border-radius: 8px;
-  background: rgba(10, 20, 40, 0.72);
-  box-shadow: 0 0 14px rgba(0, 229, 255, 0.08);
+  background: linear-gradient(180deg, rgba(14, 32, 62, 0.85), rgba(10, 20, 40, 0.72));
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.12);
 }
 
 .stat-label {
@@ -148,6 +171,21 @@ body {
   box-shadow:
     0 0 28px rgba(0, 229, 255, 0.12),
     0 0 60px rgba(255, 63, 164, 0.08);
+  animation: stageGlow 3.5s ease-in-out infinite;
+}
+
+@keyframes stageGlow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 28px rgba(0, 229, 255, 0.12),
+      0 0 60px rgba(255, 63, 164, 0.08);
+  }
+  50% {
+    box-shadow:
+      0 0 42px rgba(0, 229, 255, 0.26),
+      0 0 84px rgba(255, 63, 164, 0.18);
+  }
 }
 
 #gameCanvas {
@@ -189,8 +227,23 @@ body {
 }
 
 .panel h1 {
-  color: var(--cyan);
-  text-shadow: 0 0 18px rgba(0, 229, 255, 0.45);
+  background: linear-gradient(90deg, #00e5ff, #7dffb0, #ff3fa4, #00e5ff);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 9px rgba(0, 229, 255, 0.45));
+  animation: titleFlow 5s linear infinite;
+}
+
+@keyframes titleFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 300% 50%;
+  }
 }
 
 .panel h2 {
@@ -215,7 +268,7 @@ body {
   padding: 10px 24px;
   border: 1px solid var(--cyan);
   border-radius: 8px;
-  background: transparent;
+  background: linear-gradient(180deg, rgba(0, 229, 255, 0.14), rgba(0, 229, 255, 0.02));
   color: var(--cyan);
   font-size: 15px;
   font-family: inherit;
@@ -224,8 +277,8 @@ body {
 }
 
 .primary-btn:hover {
-  background: rgba(0, 229, 255, 0.12);
-  box-shadow: 0 0 18px rgba(0, 229, 255, 0.35);
+  background: linear-gradient(180deg, rgba(0, 229, 255, 0.26), rgba(0, 229, 255, 0.06));
+  box-shadow: 0 0 26px rgba(0, 229, 255, 0.5), inset 0 0 14px rgba(0, 229, 255, 0.18);
 }
 
 @media (max-width: 560px) {

@@ -187,7 +187,10 @@
     }
     switch (name) {
       case 'eat':
-        tone('sine', 520, 760, 0.09, 0.16);
+        // 吃食反馈：更响亮、清脆，叠加多层上行泛音
+        tone('sine', 520, 900, 0.11, 0.34);
+        tone('triangle', 780, 1240, 0.09, 0.22, 0.012);
+        tone('sine', 1560, 2200, 0.06, 0.12, 0.025);
         break;
       case 'levelUp':
         tone('triangle', 440, 880, 0.12, 0.12);
