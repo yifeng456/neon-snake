@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>霓虹贪吃蛇</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="hud">
+      <div class="stats">
+        <div class="stat">
+          <span class="stat-label">分数</span>
+          <strong id="score">0</strong>
+        </div>
+        <div class="stat">
+          <span class="stat-label">关卡</span>
+          <strong id="level">1</strong>
+        </div>
+        <div class="stat">
+          <span class="stat-label">最高分</span>
+          <strong id="best">0</strong>
+        </div>
+      </div>
+      <div class="controls">
+        <button id="pauseBtn" class="icon-btn" type="button" title="暂停 / 继续" aria-label="暂停或继续">
+          <span class="icon-pause">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" fill="currentColor"/><rect x="14" y="5" width="4" height="14" fill="currentColor"/></svg>
+          </span>
+          <span class="icon-play">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+          </span>
+        </button>
+        <button id="muteBtn" class="icon-btn" type="button" title="静音 / 开启声音" aria-label="静音或开启声音">
+          <span class="icon-sound-on">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+          </span>
+          <span class="icon-sound-off">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </span>
+        </button>
+      </div>
+    </header>
+
+    <main class="stage">
+      <canvas id="gameCanvas"></canvas>
+
+      <div id="startOverlay" class="overlay">
+        <div class="panel">
+          <h1>霓虹贪吃蛇</h1>
+          <button id="startBtn" class="primary-btn" type="button">开始游戏</button>
+        </div>
+      </div>
+
+      <div id="pauseOverlay" class="overlay hidden">
+        <div class="panel">
+          <h2>已暂停</h2>
+          <button id="resumeBtn" class="primary-btn" type="button">继续</button>
+        </div>
+      </div>
+
+      <div id="endOverlay" class="overlay hidden">
+        <div class="panel">
+          <h2 id="endTitle">游戏结束</h2>
+          <div class="end-stats">
+            <span>本局 <strong id="finalScore">0</strong></span>
+            <span>最高 <strong id="finalBest">0</strong></span>
+          </div>
+          <button id="restartBtn" class="primary-btn" type="button">再来一局</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/core.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

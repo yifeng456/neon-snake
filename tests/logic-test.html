@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>贪吃蛇核心逻辑测试</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+      background: #0b1122;
+      color: #e8f6ff;
+    }
+    h1 {
+      margin: 0 0 16px;
+      font-size: 22px;
+      color: #00e5ff;
+    }
+    #summary {
+      margin-bottom: 12px;
+      font-size: 14px;
+      color: #b6ff2e;
+    }
+    #results {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-family: Consolas, monospace;
+      font-size: 13px;
+    }
+    .pass {
+      color: #b6ff2e;
+    }
+    .fail {
+      color: #ff3fa4;
+    }
+  </style>
+</head>
+<body>
+  <h1>贪吃蛇核心逻辑测试</h1>
+  <div id="summary"></div>
+  <div id="results"></div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/core.js"></script>
+  <script>
+    (function () {
+      'use strict';
+      const S = window.Snake;
+      const cfg = S.config;
+      const results = [];
+
+      function ok(cond, msg) {
+        if (!cond) {
+          throw new Error(msg);
+        }
+      }
+
+      function eq(a, b, msg) {
+        if (a !== b) {
+          throw new Error(msg + '，期望 ' + b + '，实际 ' + a);
+        }
+      }
+
+      function test(name, fn) {
+        try {
+          fn();
+          results.push({ name: name, ok: true });
+        } catch (e) {
+          results.push({ name: name + '：' + e.message, ok: false });
+        }
+      }
+
+      function hasEvent(events, name) {
+        return events.indexOf(name) !== -1;
+      }
+
+      function occupiedBy(g, x, y) {
+        return g.snake.some(function (c) { return c.x === x && c.y === y; }) ||
+          g.obstacles.some(function (c) { return c.x === x && c.y === y; });
+      }
+
+      test('初始状态', function () {
+        const g = S.createGame();
+        eq(g.snake.length, cfg.START_LENGTH, '初始长度');
+        eq(g.snake[0].x, g.snake[1].x + 1, '蛇头朝向');
+        eq(g.level, 1, '初始关卡');
+        eq(g.tickMs, cfg.BASE_TICK_MS, '初始速度');
+        ok(g.food, '存在食物');
+        ok(!occupiedBy(g, g.food.x, g.food.y), '食物不与蛇或障碍重叠');
+      });
+
+      test('吃食增长与得分', function () {
+        const g = S.createGame();
+        g.snake = [{ x: 5, y: 5 }, { x: 4, y: 5 }, { x: 3, y: 5 }];
+        g.direction = { x: 1, y: 0 };
+        g.queue = [];
+        g.food = { x: 6, y: 5 };
+        g.obstacles = [];
+        const result = S.step(g);
+        eq(result.state.snake.length, 4, '增长后长度');
+        eq(result.state.score, cfg.POINTS_PER_FOOD, '得分');
+        ok(hasEvent(result.events, 'ate'), '触发 ate 事件');
+      });
+
+      test('方向队列与最大长度', function () {
+        const g = S.createGame();
+        ok(S.queueDirection(g, { x: 0, y: 1 }), '接受向下');
+        ok(S.queueDirection(g, { x: -1, y: 0 }), '接受向左');
+        eq(g.queue.length, 2, '队列长度');
+        ok(!S.queueDirection(g, { x: 1, y: 0 }), '满队列拒绝');
+      });
+
+      test('禁止 180 度反向', function () {
+        const g = S.createGame();
+        g.direction = { x: 1, y: 0 };
+        ok(!S.queueDirection(g, { x: -1, y: 0 }), '拒绝反向');
+        ok(S.queueDirection(g, { x: 0, y: 1 }), '接受垂直转向');
+      });
+
+      test('撞墙结束', function () {
+        const g = S.createGame();
+        g.snake = [{ x: 0, y: 5 }, { x: 1, y: 5 }];
+        g.direction = { x: -1, y: 0 };
+        g.queue = [];
+        g.food = { x: 20, y: 20 };
+        g.obstacles = [];
+        const result = S.step(g);
+        ok(hasEvent(result.events, 'gameOver'), '触发 gameOver');
+        eq(result.state.phase, 'ended', '进入结束状态');
+      });
+
+      test('撞障碍结束', function () {
+        const g = S.createGame();
+        g.snake = [{ x: 4, y: 5 }, { x: 3, y: 5 }];
+        g.direction = { x: 1, y: 0 };
+        g.queue = [];
+        g.food = { x: 20, y: 20 };
+        g.obstacles = [{ x: 5, y: 5 }];
+        const result = S.step(g);
+        ok(hasEvent(result.events, 'gameOver'), '触发 gameOver');
+      });
+
+      test('撞自身结束', function () {
+        const g = S.createGame();
+        g.snake = [
+          { x: 5, y: 5 },
+          { x: 5, y: 6 },
+          { x: 4, y: 6 },
+          { x: 4, y: 5 }
+        ];
+        g.direction = { x: 0, y: 1 };
+        g.queue = [];
+        g.food = { x: 20, y: 20 };
+        g.obstacles = [];
+        const result = S.step(g);
+        ok(hasEvent(result.events, 'gameOver'), '触发 gameOver');
+      });
+
+      test('升级提速并切换障碍', function () {
+        const g = S.createGame();
+        g.snake = [{ x: 5, y: 5 }, { x: 4, y: 5 }, { x: 3, y: 5 }];
+        g.direction = { x: 1, y: 0 };
+        g.queue = [];
+        g.food = { x: 6, y: 5 };
+        g.obstacles = [];
+        g.eaten = 4;
+        const result = S.step(g);
+        eq(result.state.level, 2, '升到 2 级');
+        ok(result.state.tickMs < g.tickMs, '速度提升');
+        ok(result.state.obstacles.length > 0, '出现障碍');
+        ok(hasEvent(result.events, 'levelUp'), '触发 levelUp');
+      });
+
+      test('障碍图案循环', function () {
+        eq(S.buildObstacles(1).length, 0, '1 级无障碍');
+        ok(S.buildObstacles(2).length > 0, '2 级有障碍');
+        ok(S.buildObstacles(3).length > 0, '3 级有障碍');
+        eq(S.buildObstacles(4).length, 0, '4 级循环回无障碍');
+      });
+
+      test('食物生成避开蛇与障碍', function () {
+        const g = S.createGame();
+        for (let i = 0; i < 200; i++) {
+          const food = S.spawnFood(g);
+          ok(food, '仍有空位');
+          ok(!occupiedBy(g, food.x, food.y), '食物位于空格');
+        }
+      });
+
+      test('食物每 2 步移动一次', function () {
+        const g = S.createGame();
+        g.snake = [{ x: 10, y: 10 }, { x: 9, y: 10 }];
+        g.direction = { x: 1, y: 0 };
+        g.queue = [];
+        g.food = { x: 5, y: 10 };
+        g.obstacles = [];
+        g.foodMoveCounter = 0;
+        const r1 = S.step(g);
+        ok(r1.state.food.x === 5 && r1.state.food.y === 10, '第一步食物不移动');
+        const r2 = S.step(r1.state);
+        ok(r2.state.food.x !== 5 || r2.state.food.y !== 10, '第二步食物移动');
+        ok(!occupiedBy(r2.state, r2.state.food.x, r2.state.food.y), '移动后食物不与蛇或障碍重叠');
+      });
+
+      test('食物优先远离蛇头', function () {
+        const g = S.createGame();
+        g.snake = [
+          { x: 5, y: 5 },
+          { x: 5, y: 6 },
+          { x: 4, y: 6 },
+          { x: 4, y: 5 }
+        ];
+        g.food = { x: 6, y: 5 };
+        g.obstacles = [];
+        const head = g.snake[0];
+        const before = Math.abs(g.food.x - head.x) + Math.abs(g.food.y - head.y);
+        const moved = S.moveFood(g);
+        const after = Math.abs(moved.x - head.x) + Math.abs(moved.y - head.y);
+        ok(moved.x !== g.food.x || moved.y !== g.food.y, '食物发生移动');
+        ok(after > before, '食物离蛇头更远');
+        ok(!occupiedBy(g, moved.x, moved.y), '移动后不与蛇或障碍重叠');
+      });
+
+      test('食物无处可去时原地不动', function () {
+        const g = S.createGame();
+        g.snake = [{ x: 5, y: 5 }, { x: 6, y: 5 }];
+        g.food = { x: 6, y: 6 };
+        g.obstacles = [{ x: 5, y: 6 }, { x: 7, y: 6 }, { x: 6, y: 7 }];
+        const moved = S.moveFood(g);
+        eq(moved.x, 6, 'x 不变');
+        eq(moved.y, 6, 'y 不变');
+      });
+
+      test('无空位时不再生成食物', function () {
+        const snake = [];
+        for (let y = 0; y < cfg.GRID_SIZE; y++) {
+          for (let x = 0; x < cfg.GRID_SIZE; x++) {
+            snake.push({ x: x, y: y });
+          }
+        }
+        const g = S.createGame();
+        g.snake = snake;
+        g.obstacles = [];
+        eq(S.spawnFood(g), null, 'spawnFood 返回 null');
+      });
+
+      const passCount = results.filter(function (r) { return r.ok; }).length;
+      document.getElementById('summary').textContent =
+        passCount + ' / ' + results.length + ' 通过';
+      const list = document.getElementById('results');
+      results.forEach(function (r) {
+        const div = document.createElement('div');
+        div.className = r.ok ? 'pass' : 'fail';
+        div.textContent = (r.ok ? 'PASS ' : 'FAIL ') + r.name;
+        list.appendChild(div);
+      });
+    })();
+  </script>
+</body>
+</html>
