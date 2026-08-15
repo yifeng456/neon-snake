@@ -38,7 +38,7 @@
   let acc = 0;
   let prevSnake = null;
   let prevFood = null;
-  let prevItem = null;
+  let prevItems = null;
   let best = 0;
   let muted = false;
 
@@ -159,7 +159,7 @@
     last = null;
     prevSnake = null;
     prevFood = null;
-    prevItem = null;
+    prevItems = null;
     updateHud();
     updatePowerHud();
     Snake.audio.startMusic();
@@ -275,18 +275,16 @@
         const prevFoodPos = state.food
           ? { x: state.food.x, y: state.food.y }
           : null;
-        const prevItemPos = state.item
-          ? { x: state.item.x, y: state.item.y }
-          : null;
+        const prevItemsPos = state.items.map(function (it) {
+          return { x: it.x, y: it.y };
+        });
         const result = Snake.step(state);
         state = result.state;
         const ev = result.events;
         const ate = ev.indexOf('ate') !== -1;
-        const levelUp = ev.indexOf('levelUp') !== -1;
-        const tookItem = ev.indexOf('itemInvisible') !== -1 || ev.indexOf('itemBullets') !== -1 || ev.indexOf('itemFreeze') !== -1;
-        // 吃食/拾取道具/升级刷新时，食物与道具直接出现，不做插值
+        // 吃食后食物重新生成，直接出现；道具数量变化（拾取/新增）时不做插值
         prevFood = ate ? null : prevFoodPos;
-        prevItem = (tookItem || levelUp) ? null : prevItemPos;
+        prevItems = (state.items.length !== prevItemsPos.length) ? null : prevItemsPos;
         handleEvents(ev);
       }
       interpT = Math.min(1, Math.max(0, acc / state.tickMs));
@@ -295,10 +293,10 @@
       acc = 0;
       prevSnake = null;
       prevFood = null;
-      prevItem = null;
+      prevItems = null;
     }
     updatePowerHud();
-    Snake.render.draw(state, now, prevSnake, prevFood, prevItem, interpT);
+    Snake.render.draw(state, now, prevSnake, prevFood, prevItems, interpT);
   }
 
   function init() {

@@ -29,7 +29,7 @@
       queue: state.queue.map(function (d) { return { x: d.x, y: d.y }; }),
       food: state.food ? { x: state.food.x, y: state.food.y } : null,
       foodMoveCounter: state.foodMoveCounter,
-      item: state.item ? { x: state.item.x, y: state.item.y } : null,
+      items: state.items.map(function (it) { return { x: it.x, y: it.y }; }),
       itemMoveCounter: state.itemMoveCounter,
       itemTimer: state.itemTimer,
       invisibleSteps: state.invisibleSteps,
@@ -106,8 +106,8 @@
     const occupied = new Set();
     state.snake.forEach(function (c) { occupied.add(keyOf(c)); });
     state.obstacles.forEach(function (c) { occupied.add(keyOf(c)); });
-    if (state.item) {
-      occupied.add(keyOf(state.item));
+    if (state.items && state.items.length) {
+      state.items.forEach(function (it) { occupied.add(keyOf(it)); });
     }
     const cells = [];
     for (let y = 0; y < cfg.GRID_SIZE; y++) {
@@ -136,9 +136,11 @@
     if (state.food && state.food !== obj) {
       occupied.add(keyOf(state.food));
     }
-    if (state.item && state.item !== obj) {
-      occupied.add(keyOf(state.item));
-    }
+    (state.items || []).forEach(function (it) {
+      if (it !== obj) {
+        occupied.add(keyOf(it));
+      }
+    });
     const candidates = [];
     Object.keys(DIRS).forEach(function (name) {
       const d = DIRS[name];
@@ -169,11 +171,8 @@
     return moveAway(state, state.food);
   }
 
-  function moveItem(state) {
-    if (!state.item) {
-      return null;
-    }
-    return moveAway(state, state.item);
+  function moveItem(state, item) {
+    return moveAway(state, item);
   }
 
   function spawnItem(state) {
@@ -295,7 +294,14 @@
     }
 
     const willEat = !!next.food && same(newHead, next.food);
-    const willTakeItem = !!next.item && same(newHead, next.item);
+    let itemIndex = -1;
+    for (let i = 0; i < next.items.length; i++) {
+      if (same(newHead, next.items[i])) {
+        itemIndex = i;
+        break;
+      }
+    }
+    const willTakeItem = itemIndex !== -1;
     // 隐身时自身也无碰撞体积，可穿过自己身体
     let bodyToCheck;
     if (invisible) {
@@ -320,20 +326,20 @@
       ? [newHead].concat(next.snake)
       : [newHead].concat(next.snake.slice(0, -1));
 
-    // 拾取道具：随机触发隐身、子弹或冻结
+    // 拾取道具：随机触发隐身、子弹或冻结，相同效果可叠加
     if (willTakeItem) {
       const roll = Math.random();
       if (roll < 1 / 3) {
-        next.invisibleSteps = Math.round(cfg.INVISIBLE_MS / next.tickMs);
+        next.invisibleSteps += Math.round(cfg.INVISIBLE_MS / next.tickMs);
         events.push('itemInvisible');
       } else if (roll < 2 / 3) {
         next.bullets += cfg.BULLETS_ON_PICKUP;
         events.push('itemBullets');
       } else {
-        next.freezeSteps = Math.round(cfg.FREEZE_MS / next.tickMs);
+        next.freezeSteps += Math.round(cfg.FREEZE_MS / next.tickMs);
         events.push('itemFreeze');
       }
-      next.item = null;
+      next.items.splice(itemIndex, 1);
       next.itemMoveCounter = 0;
     }
 
@@ -376,23 +382,25 @@
     }
 
     // 道具移动（速度锁定为关卡一速度）
-    if (next.item) {
+    if (next.items.length) {
       next.itemMoveCounter += 1;
       if (next.itemMoveCounter >= cfg.ITEM_MOVE_INTERVAL) {
-        const moved = moveItem(next);
-        if (moved) {
-          next.item = moved;
+        for (let i = 0; i < next.items.length; i++) {
+          next.items[i] = moveItem(next, next.items[i]);
         }
         next.itemMoveCounter = 0;
       }
     }
 
-    // 道具按时间刷新：得分达到阈值后，每 30 秒出现一次
-    if (next.score >= cfg.ITEM_MIN_SCORE) {
+    // 道具按时间刷新：第 3 关起，每 30 秒出现一个（可累计）
+    if (next.level >= cfg.ITEM_MIN_LEVEL) {
       if (next.itemTimer <= 0) {
-        next.item = null;
-        next.item = spawnItem(next);
-        next.itemMoveCounter = 0;
+        if (next.items.length < cfg.MAX_ITEMS) {
+          const newItem = spawnItem(next);
+          if (newItem) {
+            next.items.push(newItem);
+          }
+        }
         next.itemTimer = Math.round(cfg.ITEM_SPAWN_MS / next.tickMs);
       } else {
         next.itemTimer -= 1;
@@ -417,7 +425,7 @@
       queue: [],
       food: null,
       foodMoveCounter: 0,
-      item: null,
+      items: [],
       itemMoveCounter: 0,
       itemTimer: 0,
       invisibleSteps: 0,

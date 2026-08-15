@@ -287,15 +287,16 @@
         eq(S.spawnFood(g), null, 'spawnFood 返回 null');
       });
 
-      test('道具每 30 秒出现', function () {
+      test('第 3 关起道具每 30 秒出现', function () {
         const g = S.createGame();
+        g.level = 3;
         g.snake = [{ x: 5, y: 5 }, { x: 4, y: 5 }, { x: 3, y: 5 }, { x: 2, y: 5 }];
         g.direction = { x: 1, y: 0 };
         g.queue = [];
         g.food = { x: 20, y: 20 };
         g.obstacles = [];
         const result = S.step(g);
-        ok(result.state.item, '生成道具');
+        ok(result.state.items.length > 0, '生成道具');
         ok(result.state.itemTimer > 0, '设置 30 秒计时器');
       });
 

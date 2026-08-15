@@ -244,41 +244,45 @@
     }
   }
 
-  function drawItem(state, now, prevItem, interpT) {
-    if (!state.item) {
+  function drawItems(state, now, prevItems, interpT) {
+    if (!state.items || !state.items.length) {
       return;
     }
     const cell = cssSize / cfg.GRID_SIZE;
-    const ix = prevItem ? prevItem.x + (state.item.x - prevItem.x) * interpT : state.item.x;
-    const iy = prevItem ? prevItem.y + (state.item.y - prevItem.y) * interpT : state.item.y;
     const pulse = 1 + 0.08 * Math.sin(now / 260);
-    const cx = (ix + 0.5) * cell;
-    const cy = (iy + 0.5) * cell;
-    const size = cell * 0.68 * pulse;
+    for (let i = 0; i < state.items.length; i++) {
+      const it = state.items[i];
+      const prev = prevItems && prevItems[i];
+      const ix = prev ? prev.x + (it.x - prev.x) * interpT : it.x;
+      const iy = prev ? prev.y + (it.y - prev.y) * interpT : it.y;
+      const cx = (ix + 0.5) * cell;
+      const cy = (iy + 0.5) * cell;
+      const size = cell * 0.68 * pulse;
 
-    // 白色发光方块
-    ctx.shadowColor = 'rgba(255, 255, 255, 0.95)';
-    ctx.shadowBlur = 18;
-    const g = ctx.createLinearGradient(cx - size / 2, cy - size / 2, cx - size / 2, cy + size / 2);
-    g.addColorStop(0, '#ffffff');
-    g.addColorStop(1, '#cfd9ff');
-    ctx.fillStyle = g;
-    roundRect(cx - size / 2, cy - size / 2, size, size, 4);
-    ctx.fill();
-    ctx.shadowBlur = 0;
+      // 白色发光方块
+      ctx.shadowColor = 'rgba(255, 255, 255, 0.95)';
+      ctx.shadowBlur = 18;
+      const g = ctx.createLinearGradient(cx - size / 2, cy - size / 2, cx - size / 2, cy + size / 2);
+      g.addColorStop(0, '#ffffff');
+      g.addColorStop(1, '#cfd9ff');
+      ctx.fillStyle = g;
+      roundRect(cx - size / 2, cy - size / 2, size, size, 4);
+      ctx.fill();
+      ctx.shadowBlur = 0;
 
-    // 描边
-    ctx.strokeStyle = 'rgba(200, 220, 255, 0.9)';
-    ctx.lineWidth = 1.2;
-    roundRect(cx - size / 2, cy - size / 2, size, size, 4);
-    ctx.stroke();
+      // 描边
+      ctx.strokeStyle = 'rgba(200, 220, 255, 0.9)';
+      ctx.lineWidth = 1.2;
+      roundRect(cx - size / 2, cy - size / 2, size, size, 4);
+      ctx.stroke();
 
-    // 问号
-    ctx.fillStyle = '#1a2a4a';
-    ctx.font = 'bold ' + Math.round(size * 0.62) + 'px "Segoe UI", "Microsoft YaHei", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('?', cx, cy + size * 0.03);
+      // 问号
+      ctx.fillStyle = '#1a2a4a';
+      ctx.font = 'bold ' + Math.round(size * 0.62) + 'px "Segoe UI", "Microsoft YaHei", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('?', cx, cy + size * 0.03);
+    }
   }
 
   function drawSnake(state, prevSnake, interpT) {
@@ -606,7 +610,7 @@
     ctx.shadowBlur = 0;
   }
 
-  function draw(state, now, prevSnake, prevFood, prevItem, interpT) {
+  function draw(state, now, prevSnake, prevFood, prevItems, interpT) {
     if (!ctx) {
       return;
     }
@@ -616,7 +620,7 @@
     drawGrid();
     drawObstacles(state, now);
     drawFood(state, now, prevFood, interpT);
-    drawItem(state, now, prevItem, interpT);
+    drawItems(state, now, prevItems, interpT);
     drawSnake(state, prevSnake, interpT);
     updateEffects();
     drawEffects();
