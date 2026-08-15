@@ -340,7 +340,7 @@ body::before {
   display: none;
   align-items: center;
   justify-content: center;
-  gap: 48px;
+  gap: 32px;
   width: min(92vw, 620px);
   padding: 4px 0;
 }
@@ -355,9 +355,9 @@ body.touch .mobile-controls {
     ". up ."
     "left . right"
     ". down .";
-  grid-template-columns: repeat(3, 56px);
-  grid-template-rows: repeat(3, 56px);
-  gap: 4px;
+  grid-template-columns: repeat(3, 64px);
+  grid-template-rows: repeat(3, 64px);
+  gap: 2px;
 }
 
 .dpad-up { grid-area: up; }
@@ -366,13 +366,13 @@ body.touch .mobile-controls {
 .dpad-down { grid-area: down; }
 
 .dpad-btn {
-  width: 56px;
-  height: 56px;
-  border-radius: 10px;
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
   border: 1px solid rgba(0, 229, 255, 0.4);
   background: rgba(10, 20, 40, 0.72);
   color: var(--cyan);
-  font-size: 20px;
+  font-size: 24px;
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -389,13 +389,13 @@ body.touch .mobile-controls {
 }
 
 .shoot-btn {
-  width: 76px;
-  height: 76px;
+  width: 88px;
+  height: 88px;
   border-radius: 50%;
   border: 1px solid rgba(255, 63, 164, 0.5);
   background: radial-gradient(circle, rgba(255, 63, 164, 0.28), rgba(255, 63, 164, 0.06));
   color: var(--magenta);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   display: grid;
   place-items: center;
