@@ -30,6 +30,7 @@
   let rafId = 0;
   let last = null;
   let acc = 0;
+  let prevSnake = null;
   let best = 0;
   let muted = false;
 
@@ -120,6 +121,7 @@
     hideAllOverlays();
     acc = 0;
     last = null;
+    prevSnake = null;
     updateHud();
     Snake.audio.startMusic();
   }
@@ -182,6 +184,7 @@
 
   function frame(now) {
     rafId = requestAnimationFrame(frame);
+    let interpT = 0;
     if (phase === 'running') {
       if (last === null) {
         last = now;
@@ -190,15 +193,21 @@
       last = now;
       while (phase === 'running' && acc >= state.tickMs) {
         acc -= state.tickMs;
+        // 记录本次移动前的蛇身位置，用于平滑插值
+        prevSnake = state.snake.map(function (c) {
+          return { x: c.x, y: c.y };
+        });
         const result = Snake.step(state);
         state = result.state;
         handleEvents(result.events);
       }
+      interpT = Math.min(1, Math.max(0, acc / state.tickMs));
     } else {
       last = null;
       acc = 0;
+      prevSnake = null;
     }
-    Snake.render.draw(state, now);
+    Snake.render.draw(state, now, prevSnake, interpT);
   }
 
   function init() {

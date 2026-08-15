@@ -178,7 +178,7 @@
     ctx.stroke();
   }
 
-  function drawSnake(state) {
+  function drawSnake(state, prevSnake, interpT) {
     const cell = cssSize / cfg.GRID_SIZE;
     const len = state.snake.length;
     const s = headScale();
@@ -187,8 +187,12 @@
       const t = len === 1 ? 0 : i / (len - 1);
       const hue = 185 - t * 100;
       const light = i === 0 ? 62 : 46 + t * 12;
-      const x = seg.x * cell;
-      const y = seg.y * cell;
+      // 平滑插值：在上一位置与当前位置之间连续过渡
+      const prev = prevSnake && prevSnake[i];
+      const ix = prev ? prev.x + (seg.x - prev.x) * interpT : seg.x;
+      const iy = prev ? prev.y + (seg.y - prev.y) * interpT : seg.y;
+      const x = ix * cell;
+      const y = iy * cell;
 
       // 蛇头吞咽动画：放大再弹回
       let size = cell - 3;
@@ -217,11 +221,14 @@
       ctx.fill();
     }
 
-    // 蛇头眼睛
+    // 蛇头眼睛（跟随插值后的头部位置）
     const head = state.snake[0];
     if (head) {
-      const hx = (head.x + 0.5) * cell;
-      const hy = (head.y + 0.5) * cell;
+      const prevHead = prevSnake && prevSnake[0];
+      const hix = prevHead ? prevHead.x + (head.x - prevHead.x) * interpT : head.x;
+      const hiy = prevHead ? prevHead.y + (head.y - prevHead.y) * interpT : head.y;
+      const hx = (hix + 0.5) * cell;
+      const hy = (hiy + 0.5) * cell;
       const dx = state.direction.x;
       const dy = state.direction.y;
       const px = -dy;
@@ -351,7 +358,7 @@
     ctx.shadowBlur = 0;
   }
 
-  function draw(state, now) {
+  function draw(state, now, prevSnake, interpT) {
     if (!ctx) {
       return;
     }
@@ -361,7 +368,7 @@
     drawGrid();
     drawObstacles(state, now);
     drawFood(state, now);
-    drawSnake(state);
+    drawSnake(state, prevSnake, interpT);
     updateEffects();
     drawEffects();
   }
