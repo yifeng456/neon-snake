@@ -30,23 +30,27 @@ body {
 body::before {
   content: '';
   position: fixed;
-  inset: 0;
+  inset: -80px;
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(620px 620px at 15% 18%, rgba(0, 229, 255, 0.12), transparent 60%),
-    radial-gradient(720px 720px at 85% 82%, rgba(255, 63, 164, 0.12), transparent 60%);
+    radial-gradient(520px 520px at 12% 16%, rgba(0, 229, 255, 0.6), transparent 60%),
+    radial-gradient(620px 620px at 88% 18%, rgba(255, 63, 164, 0.5), transparent 62%),
+    radial-gradient(560px 560px at 82% 84%, rgba(0, 229, 255, 0.42), transparent 60%),
+    radial-gradient(660px 660px at 16% 86%, rgba(182, 255, 46, 0.35), transparent 62%),
+    radial-gradient(480px 480px at 50% 50%, rgba(255, 214, 64, 0.2), transparent 60%);
+  filter: blur(52px);
   animation: aurora 14s ease-in-out infinite alternate;
 }
 
 @keyframes aurora {
   0% {
-    opacity: 0.55;
+    opacity: 0.65;
     transform: translate3d(0, 0, 0) scale(1);
   }
   100% {
     opacity: 1;
-    transform: translate3d(0, -32px, 0) scale(1.08);
+    transform: translate3d(0, -36px, 0) scale(1.1);
   }
 }
 
