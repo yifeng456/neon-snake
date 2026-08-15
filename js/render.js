@@ -8,6 +8,7 @@
   let cssSize = 0;
   let dpr = 1;
   let stars = null;
+  let effects = [];
 
   function init(el) {
     canvas = el;
@@ -234,6 +235,101 @@
     }
   }
 
+  function spawnEatEffect(gx, gy) {
+    const cell = cssSize / cfg.GRID_SIZE;
+    const cx = (gx + 0.5) * cell;
+    const cy = (gy + 0.5) * cell;
+
+    // 粒子火花爆发（金色）
+    for (let i = 0; i < 16; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const spd = cell * (0.1 + Math.random() * 0.18);
+      effects.push({
+        type: 'spark',
+        x: cx,
+        y: cy,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd,
+        life: 0,
+        maxLife: 26 + Math.floor(Math.random() * 18),
+        size: cell * (0.05 + Math.random() * 0.09),
+        hue: 40 + Math.floor(Math.random() * 20)
+      });
+    }
+    // 扩散光环
+    effects.push({
+      type: 'ring',
+      x: cx,
+      y: cy,
+      life: 0,
+      maxLife: 24,
+      r0: cell * 0.3,
+      r1: cell * 1.7
+    });
+    // 中心爆闪
+    effects.push({
+      type: 'flash',
+      x: cx,
+      y: cy,
+      life: 0,
+      maxLife: 12,
+      r0: cell * 0.2,
+      r1: cell * 0.9
+    });
+  }
+
+  function updateEffects() {
+    const cell = cssSize / cfg.GRID_SIZE;
+    for (let i = effects.length - 1; i >= 0; i--) {
+      const e = effects[i];
+      e.life += 1;
+      if (e.type === 'spark') {
+        e.x += e.vx;
+        e.y += e.vy;
+        e.vy += cell * 0.015;
+        e.vx *= 0.95;
+        e.vy *= 0.95;
+      }
+      if (e.life >= e.maxLife) {
+        effects.splice(i, 1);
+      }
+    }
+  }
+
+  function drawEffects() {
+    effects.forEach(function (e) {
+      const t = e.life / e.maxLife;
+      const a = 1 - t;
+      if (e.type === 'spark') {
+        ctx.fillStyle = 'hsla(' + e.hue + ', 100%, 66%, ' + a + ')';
+        ctx.shadowColor = 'hsla(' + e.hue + ', 100%, 60%, ' + a + ')';
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.size * (1 - t * 0.4), 0, Math.PI * 2);
+        ctx.fill();
+      } else if (e.type === 'ring') {
+        const r = e.r0 + (e.r1 - e.r0) * t;
+        ctx.strokeStyle = 'rgba(255, 214, 64, ' + (a * 0.9) + ')';
+        ctx.lineWidth = 2.5 * (1 - t) + 0.4;
+        ctx.shadowColor = 'rgba(255, 214, 64, ' + a + ')';
+        ctx.shadowBlur = 14;
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, r, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (e.type === 'flash') {
+        const r = e.r0 + (e.r1 - e.r0) * t;
+        const g = ctx.createRadialGradient(e.x, e.y, 0, e.x, e.y, r);
+        g.addColorStop(0, 'rgba(255, 240, 190, ' + (a * 0.9) + ')');
+        g.addColorStop(1, 'rgba(255, 214, 64, 0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+    ctx.shadowBlur = 0;
+  }
+
   function draw(state, now) {
     if (!ctx) {
       return;
@@ -245,11 +341,14 @@
     drawObstacles(state, now);
     drawFood(state, now);
     drawSnake(state);
+    updateEffects();
+    drawEffects();
   }
 
   Snake.render = {
     init: init,
     resize: resize,
-    draw: draw
+    draw: draw,
+    spawnEatEffect: spawnEatEffect
   };
 })();

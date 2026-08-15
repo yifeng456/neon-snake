@@ -98,6 +98,8 @@
       if (name === 'ate') {
         Snake.audio.play('eat');
         updateHud();
+        const head = state.snake[0];
+        Snake.render.spawnEatEffect(head.x, head.y);
       } else if (name === 'levelUp') {
         Snake.audio.play('levelUp');
         updateHud();
