@@ -59,13 +59,13 @@ body::before {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 14px;
+  gap: 16px;
   padding: 16px;
 }
 
 .hud {
   width: min(92vw, 620px);
+  margin-top: auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -301,6 +301,41 @@ body::before {
   box-shadow: 0 0 26px rgba(0, 229, 255, 0.5), inset 0 0 14px rgba(0, 229, 255, 0.18);
 }
 
+.instructions {
+  width: min(92vw, 860px);
+  margin-bottom: auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.instr-group {
+  padding: 14px 16px;
+  border: 1px solid rgba(0, 229, 255, 0.22);
+  border-radius: 8px;
+  background: rgba(10, 20, 40, 0.6);
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.06);
+}
+
+.instr-group h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: var(--cyan);
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+}
+
+.instr-group ul {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.instr-group li + li {
+  margin-top: 2px;
+}
+
 @media (max-width: 560px) {
   .hud {
     justify-content: center;
@@ -313,5 +348,9 @@ body::before {
 
   .stage {
     width: min(94vw, calc(100vh - 190px));
+  }
+
+  .instructions {
+    grid-template-columns: 1fr;
   }
 }
