@@ -24,6 +24,23 @@
     { mid: '#ff7a4d', edge: '#e0421a', rgb: '255, 122, 77' }    // 橙红
   ];
 
+  // 蛇身颜色：初始为红黄蓝绿（淡色）
+  const SNAKE_BASE_COLORS = [
+    { h: 0, s: 85, l: 70 },    // 淡红
+    { h: 50, s: 90, l: 75 },   // 淡黄
+    { h: 210, s: 90, l: 72 },  // 淡蓝
+    { h: 130, s: 70, l: 68 }   // 淡绿
+  ];
+  // 与 FOOD_COLORS 顺序对应的食物淡色，用于新增蛇身段
+  const FOOD_PALE_COLORS = [
+    { h: 50, s: 95, l: 78 },   // 金黄淡
+    { h: 185, s: 90, l: 78 },  // 青淡
+    { h: 330, s: 85, l: 78 },  // 洋红淡
+    { h: 80, s: 85, l: 76 },   // 荧光绿淡
+    { h: 265, s: 85, l: 80 },  // 紫淡
+    { h: 18, s: 90, l: 76 }    // 橙红淡
+  ];
+
   function init(el) {
     canvas = el;
     ctx = canvas.getContext('2d');
@@ -201,9 +218,7 @@
     const s = headScale();
     for (let i = len - 1; i >= 0; i--) {
       const seg = state.snake[i];
-      const t = len === 1 ? 0 : i / (len - 1);
-      const hue = 185 - t * 100;
-      const light = i === 0 ? 62 : 46 + t * 12;
+      const col = segmentColor(i);
       // 平滑插值：在上一位置与当前位置之间连续过渡
       const prev = prevSnake && prevSnake[i];
       const ix = prev ? prev.x + (seg.x - prev.x) * interpT : seg.x;
@@ -219,14 +234,14 @@
         pad = 1.5 - (size - (cell - 3)) / 2;
       }
 
-      ctx.shadowColor = 'hsla(' + hue + ', 95%, 55%, 0.85)';
+      ctx.shadowColor = 'hsla(' + col.h + ', ' + col.s + '%, 62%, 0.85)';
       ctx.shadowBlur = i === 0 ? 20 + (s - 1) * 40 : 11;
 
-      // 垂直渐变，模拟霓虹灯管（上亮下暗）
+      // 垂直渐变，模拟霓虹灯管（上亮下暗，淡色系）
       const g = ctx.createLinearGradient(x, y, x, y + cell);
-      g.addColorStop(0, 'hsl(' + hue + ', 100%, ' + Math.min(74, light + 10) + '%)');
-      g.addColorStop(0.5, 'hsl(' + hue + ', 95%, ' + light + '%)');
-      g.addColorStop(1, 'hsl(' + hue + ', 90%, ' + Math.max(26, light - 15) + '%)');
+      g.addColorStop(0, 'hsl(' + col.h + ', ' + col.s + '%, ' + Math.min(88, col.l + 10) + '%)');
+      g.addColorStop(0.5, 'hsl(' + col.h + ', ' + col.s + '%, ' + col.l + '%)');
+      g.addColorStop(1, 'hsl(' + col.h + ', ' + col.s + '%, ' + Math.max(56, col.l - 16) + '%)');
       ctx.fillStyle = g;
       roundRect(x + pad, y + pad, size, size, 5);
       ctx.fill();
@@ -348,6 +363,13 @@
     }
     // 正弦开合：0 -> 1 -> 0，总时长约 0.5 秒
     return Math.sin(Math.PI * mouthT / MOUTH_MAX);
+  }
+
+  function segmentColor(i) {
+    if (i < SNAKE_BASE_COLORS.length) {
+      return SNAKE_BASE_COLORS[i];
+    }
+    return FOOD_PALE_COLORS[(i - SNAKE_BASE_COLORS.length) % FOOD_PALE_COLORS.length];
   }
 
   function updateEffects() {
