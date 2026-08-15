@@ -76,11 +76,11 @@ body::before {
 .stats {
   display: flex;
   gap: 8px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
 }
 
 .stat {
-  min-width: 56px;
+  min-width: 76px;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -97,7 +97,7 @@ body::before {
 }
 
 .stat strong {
-  font-size: 18px;
+  font-size: 20px;
   line-height: 1.1;
   color: var(--cyan);
 }
@@ -422,8 +422,8 @@ body.touch .mobile-controls {
   }
 
   .stat {
-    min-width: 50px;
-    padding: 5px 7px;
+    min-width: 56px;
+    padding: 5px 8px;
   }
 
   .stage {
