@@ -239,6 +239,24 @@
     }
   }
 
+  function initMobileControls() {
+    const dpadBtns = document.querySelectorAll('.dpad-btn');
+    for (let i = 0; i < dpadBtns.length; i++) {
+      const btn = dpadBtns[i];
+      btn.addEventListener('pointerdown', function (e) {
+        e.preventDefault();
+        onDirection(btn.getAttribute('data-dir'));
+      });
+    }
+    const shootBtn = document.getElementById('shootBtn');
+    if (shootBtn) {
+      shootBtn.addEventListener('pointerdown', function (e) {
+        e.preventDefault();
+        onShoot();
+      });
+    }
+  }
+
   function frame(now) {
     rafId = requestAnimationFrame(frame);
     let interpT = 0;
@@ -284,6 +302,11 @@
   }
 
   function init() {
+    // 触屏设备显示手机端操作区
+    if ('ontouchstart' in window || (navigator.maxTouchPoints || 0) > 0) {
+      document.body.classList.add('touch');
+    }
+
     Snake.render.init(canvas);
     Snake.render.resize();
     loadBest();
@@ -326,6 +349,8 @@
       onConfirm: onConfirm,
       onShoot: onShoot
     });
+
+    initMobileControls();
 
     rafId = requestAnimationFrame(frame);
   }
