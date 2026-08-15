@@ -11,6 +11,8 @@
   let effects = [];
   let headPulseT = 0;
   const HEAD_PULSE_MAX = 18;
+  let mouthT = 0;
+  const MOUTH_MAX = 30; // 张嘴动画约 0.5 秒（60fps 下）
 
   // 食物主题色（每吃一个循环切换）
   const FOOD_COLORS = [
@@ -265,6 +267,25 @@
         ctx.fill();
       });
       ctx.shadowBlur = 0;
+
+      // 张嘴吃食动画（吃到食物时嘴巴张开再闭合，约 0.5 秒）
+      const m = mouthOpen();
+      if (m > 0) {
+        const frontD = cell * 0.42 * s;
+        const mouthHalf = cell * 0.24 * m * s;
+        const mouthLen = cell * 0.32 * m * s;
+        const fx = hx + dx * frontD;
+        const fy = hy + dy * frontD;
+        const ax = hx + dx * (frontD - mouthLen);
+        const ay = hy + dy * (frontD - mouthLen);
+        ctx.fillStyle = '#05070f';
+        ctx.beginPath();
+        ctx.moveTo(fx + px * mouthHalf, fy + py * mouthHalf);
+        ctx.lineTo(ax, ay);
+        ctx.lineTo(fx - px * mouthHalf, fy - py * mouthHalf);
+        ctx.closePath();
+        ctx.fill();
+      }
     }
   }
 
@@ -273,6 +294,7 @@
     const cx = (gx + 0.5) * cell;
     const cy = (gy + 0.5) * cell;
     headPulseT = 0; // 触发蛇头吞咽动画
+    mouthT = 0; // 触发张嘴动画
 
     // 粒子火花爆发（金色）
     for (let i = 0; i < 16; i++) {
@@ -320,6 +342,14 @@
     return 1 + 0.7 * Math.sin(0.45 * headPulseT) * Math.exp(-0.22 * headPulseT);
   }
 
+  function mouthOpen() {
+    if (mouthT >= MOUTH_MAX) {
+      return 0;
+    }
+    // 正弦开合：0 -> 1 -> 0，总时长约 0.5 秒
+    return Math.sin(Math.PI * mouthT / MOUTH_MAX);
+  }
+
   function updateEffects() {
     const cell = cssSize / cfg.GRID_SIZE;
     for (let i = effects.length - 1; i >= 0; i--) {
@@ -337,6 +367,7 @@
       }
     }
     headPulseT = Math.min(headPulseT + 1, HEAD_PULSE_MAX);
+    mouthT = Math.min(mouthT + 1, MOUTH_MAX);
   }
 
   function drawEffects() {
