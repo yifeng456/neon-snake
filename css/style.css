@@ -75,29 +75,29 @@ body::before {
 
 .stats {
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 6px;
+  flex-wrap: nowrap;
 }
 
 .stat {
-  min-width: 84px;
+  min-width: 44px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 6px 12px;
+  gap: 1px;
+  padding: 4px 6px;
   border: 1px solid rgba(0, 229, 255, 0.25);
-  border-radius: 8px;
+  border-radius: 6px;
   background: linear-gradient(180deg, rgba(14, 32, 62, 0.85), rgba(10, 20, 40, 0.72));
-  box-shadow: 0 0 16px rgba(0, 229, 255, 0.12);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.1);
 }
 
 .stat-label {
-  font-size: 11px;
+  font-size: 9px;
   color: var(--muted);
 }
 
 .stat strong {
-  font-size: 20px;
+  font-size: 14px;
   line-height: 1.1;
   color: var(--cyan);
 }
@@ -418,8 +418,8 @@ body.touch .mobile-controls {
   }
 
   .stat {
-    min-width: 78px;
-    padding: 5px 10px;
+    min-width: 40px;
+    padding: 3px 5px;
   }
 
   .stage {
