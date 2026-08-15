@@ -66,6 +66,20 @@
     ctx.closePath();
   }
 
+  function drawSnowflake(cx, cy, r) {
+    ctx.strokeStyle = 'rgba(210, 240, 255, 0.9)';
+    ctx.lineWidth = 1.5;
+    for (let k = 0; k < 3; k++) {
+      const a = (Math.PI / 3) * k;
+      const dx = Math.cos(a);
+      const dy = Math.sin(a);
+      ctx.beginPath();
+      ctx.moveTo(cx - dx * r, cy - dy * r);
+      ctx.lineTo(cx + dx * r, cy + dy * r);
+      ctx.stroke();
+    }
+  }
+
   function initStars() {
     stars = [];
     for (let i = 0; i < 42; i++) {
@@ -172,6 +186,7 @@
       return;
     }
     const cell = cssSize / cfg.GRID_SIZE;
+    const frozen = state.freezeSteps > 0;
     // 平滑插值食物位置
     const fx = prevFood ? prevFood.x + (state.food.x - prevFood.x) * interpT : state.food.x;
     const fy = prevFood ? prevFood.y + (state.food.y - prevFood.y) * interpT : state.food.y;
@@ -203,13 +218,30 @@
     ctx.arc(cx - rad * 0.35, cy - rad * 0.35, rad * 0.22, 0, Math.PI * 2);
     ctx.fill();
 
-    // 旋转光环
+    // 旋转光环（冻结时停止旋转）
     const ringA = 0.45 + 0.35 * Math.sin(now / 200);
+    const ringAngle = frozen ? 0 : now / 600;
     ctx.strokeStyle = 'rgba(' + col.rgb + ', ' + ringA + ')';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.arc(cx, cy, rad * 1.7, now / 600, now / 600 + Math.PI * 1.4);
+    ctx.arc(cx, cy, rad * 1.7, ringAngle, ringAngle + Math.PI * 1.4);
     ctx.stroke();
+
+    // 冻结效果：冰蓝覆盖 + 冰晶 + 静态冰环
+    if (frozen) {
+      ctx.fillStyle = 'rgba(150, 210, 255, 0.35)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, rad * 1.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      drawSnowflake(cx, cy, rad * 0.9);
+
+      ctx.strokeStyle = 'rgba(180, 225, 255, 0.7)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(cx, cy, rad * 1.5, 0, Math.PI * 2);
+      ctx.stroke();
+    }
   }
 
   function drawItem(state, now, prevItem, interpT) {
@@ -441,6 +473,51 @@
     });
   }
 
+  function spawnFreezeEffect(gx, gy) {
+    const cell = cssSize / cfg.GRID_SIZE;
+    const cx = (gx + 0.5) * cell;
+    const cy = (gy + 0.5) * cell;
+
+    // 冰蓝粒子
+    for (let i = 0; i < 14; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const spd = cell * (0.08 + Math.random() * 0.16);
+      effects.push({
+        type: 'spark',
+        x: cx,
+        y: cy,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd,
+        life: 0,
+        maxLife: 24 + Math.floor(Math.random() * 16),
+        size: cell * (0.05 + Math.random() * 0.09),
+        hue: 200 + Math.floor(Math.random() * 30)
+      });
+    }
+    // 冰环
+    effects.push({
+      type: 'ring',
+      x: cx,
+      y: cy,
+      life: 0,
+      maxLife: 22,
+      r0: cell * 0.2,
+      r1: cell * 1.5,
+      rgb: '180, 225, 255'
+    });
+    // 爆闪（冰蓝）
+    effects.push({
+      type: 'flash',
+      x: cx,
+      y: cy,
+      life: 0,
+      maxLife: 10,
+      r0: cell * 0.15,
+      r1: cell * 0.8,
+      rgb: '190, 235, 255'
+    });
+  }
+
   function headScale() {
     if (headPulseT >= HEAD_PULSE_MAX) {
       return 1;
@@ -497,9 +574,10 @@
         ctx.fill();
       } else if (e.type === 'ring') {
         const r = e.r0 + (e.r1 - e.r0) * t;
-        ctx.strokeStyle = 'rgba(255, 214, 64, ' + (a * 0.9) + ')';
+        const rgb = e.rgb || '255, 214, 64';
+        ctx.strokeStyle = 'rgba(' + rgb + ', ' + (a * 0.9) + ')';
         ctx.lineWidth = 2.5 * (1 - t) + 0.4;
-        ctx.shadowColor = 'rgba(255, 214, 64, ' + a + ')';
+        ctx.shadowColor = 'rgba(' + rgb + ', ' + a + ')';
         ctx.shadowBlur = 14;
         ctx.beginPath();
         ctx.arc(e.x, e.y, r, 0, Math.PI * 2);
@@ -549,6 +627,7 @@
     resize: resize,
     draw: draw,
     spawnEatEffect: spawnEatEffect,
-    spawnShootEffect: spawnShootEffect
+    spawnShootEffect: spawnShootEffect,
+    spawnFreezeEffect: spawnFreezeEffect
   };
 })();

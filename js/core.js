@@ -32,6 +32,7 @@
       item: state.item ? { x: state.item.x, y: state.item.y } : null,
       itemMoveCounter: state.itemMoveCounter,
       invisibleSteps: state.invisibleSteps,
+      freezeSteps: state.freezeSteps,
       bullets: state.bullets,
       brokenObstacles: state.brokenObstacles.slice(),
       obstacles: state.obstacles.map(function (c) { return { x: c.x, y: c.y }; }),
@@ -268,6 +269,10 @@
     if (invisible) {
       next.invisibleSteps -= 1;
     }
+    const frozen = next.freezeSteps > 0;
+    if (frozen) {
+      next.freezeSteps -= 1;
+    }
 
     const head = next.snake[0];
     let newHead = {
@@ -299,14 +304,18 @@
       ? [newHead].concat(next.snake)
       : [newHead].concat(next.snake.slice(0, -1));
 
-    // 拾取道具：随机触发隐身或子弹
+    // 拾取道具：随机触发隐身、子弹或冻结
     if (willTakeItem) {
-      if (Math.random() < 0.5) {
+      const roll = Math.random();
+      if (roll < 1 / 3) {
         next.invisibleSteps = Math.round(cfg.INVISIBLE_MS / next.tickMs);
         events.push('itemInvisible');
-      } else {
+      } else if (roll < 2 / 3) {
         next.bullets += cfg.BULLETS_ON_PICKUP;
         events.push('itemBullets');
+      } else {
+        next.freezeSteps = Math.round(cfg.FREEZE_MS / next.tickMs);
+        events.push('itemFreeze');
       }
       next.item = null;
       next.itemMoveCounter = 0;
@@ -348,13 +357,16 @@
       }
       next.foodMoveCounter = 0;
     } else {
-      next.foodMoveCounter += 1;
-      if (next.foodMoveCounter >= foodMoveInterval(next.snake.length)) {
-        const moved = moveFood(next);
-        if (moved) {
-          next.food = moved;
+      // 冻结期间食物停止移动
+      if (!frozen) {
+        next.foodMoveCounter += 1;
+        if (next.foodMoveCounter >= foodMoveInterval(next.snake.length)) {
+          const moved = moveFood(next);
+          if (moved) {
+            next.food = moved;
+          }
+          next.foodMoveCounter = 0;
         }
-        next.foodMoveCounter = 0;
       }
     }
 
@@ -389,6 +401,7 @@
       item: null,
       itemMoveCounter: 0,
       invisibleSteps: 0,
+      freezeSteps: 0,
       bullets: 0,
       brokenObstacles: [],
       obstacles: buildObstacles(1),

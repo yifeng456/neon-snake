@@ -213,6 +213,10 @@
         tone('triangle', 523, 1046, 0.14, 0.16);
         tone('triangle', 784, 1568, 0.16, 0.12, 0.1);
         break;
+      case 'freeze':
+        tone('sine', 2093, 1568, 0.18, 0.14);
+        tone('sine', 2637, 2093, 0.2, 0.1, 0.06);
+        break;
     }
   }
 

@@ -316,6 +316,24 @@
         ok(g.brokenObstacles.indexOf('8:5') !== -1, '记录击碎');
       });
 
+      test('冻结期间食物不移动', function () {
+        const g = S.createGame();
+        g.freezeSteps = 100;
+        g.snake = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }, { x: 7, y: 10 }];
+        g.direction = { x: 1, y: 0 };
+        g.queue = [];
+        g.food = { x: 5, y: 10 };
+        g.obstacles = [];
+        g.foodMoveCounter = 0;
+        let cur = g;
+        for (let i = 0; i < 8; i++) {
+          cur = S.step(cur).state;
+        }
+        eq(cur.food.x, 5, '冻结期间食物 x 不变');
+        eq(cur.food.y, 10, '冻结期间食物 y 不变');
+        ok(cur.freezeSteps < 100, '冻结倒计时递减');
+      });
+
       const passCount = results.filter(function (r) { return r.ok; }).length;
       document.getElementById('summary').textContent =
         passCount + ' / ' + results.length + ' 通过';

@@ -118,6 +118,10 @@ body::before {
   color: var(--cyan);
 }
 
+#freezeStat strong {
+  color: #9fdcff;
+}
+
 .controls {
   display: flex;
   gap: 8px;

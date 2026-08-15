@@ -16,6 +16,8 @@
     bulletStat: $('#bulletStat'),
     invisibleTime: $('#invisibleTime'),
     invisibleStat: $('#invisibleStat'),
+    freezeTime: $('#freezeTime'),
+    freezeStat: $('#freezeStat'),
     pauseBtn: $('#pauseBtn'),
     muteBtn: $('#muteBtn'),
     startOverlay: $('#startOverlay'),
@@ -88,6 +90,12 @@
       const secs = Math.max(1, Math.ceil(state.invisibleSteps * state.tickMs / 1000));
       els.invisibleTime.textContent = secs + 's';
     }
+    const frozen = state.freezeSteps > 0;
+    els.freezeStat.classList.toggle('hidden', !frozen);
+    if (frozen) {
+      const secs = Math.max(1, Math.ceil(state.freezeSteps * state.tickMs / 1000));
+      els.freezeTime.textContent = secs + 's';
+    }
   }
 
   function updatePauseButton() {
@@ -127,6 +135,11 @@
       } else if (name === 'itemInvisible' || name === 'itemBullets') {
         Snake.audio.play('item');
         updatePowerHud();
+      } else if (name === 'itemFreeze') {
+        Snake.audio.play('freeze');
+        updatePowerHud();
+        const fhead = state.snake[0];
+        Snake.render.spawnFreezeEffect(fhead.x, fhead.y);
       } else if (name === 'gameOver') {
         Snake.audio.play('gameOver');
         finishGame(false);
@@ -247,7 +260,7 @@
         const ev = result.events;
         const ate = ev.indexOf('ate') !== -1;
         const levelUp = ev.indexOf('levelUp') !== -1;
-        const tookItem = ev.indexOf('itemInvisible') !== -1 || ev.indexOf('itemBullets') !== -1;
+        const tookItem = ev.indexOf('itemInvisible') !== -1 || ev.indexOf('itemBullets') !== -1 || ev.indexOf('itemFreeze') !== -1;
         // 吃食/拾取道具/升级刷新时，食物与道具直接出现，不做插值
         prevFood = ate ? null : prevFoodPos;
         prevItem = (tookItem || levelUp) ? null : prevItemPos;
