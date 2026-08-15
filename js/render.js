@@ -361,7 +361,7 @@
     ctx.shadowBlur = 0;
   }
 
-  function draw(state, now, prevSnake, interpT) {
+  function draw(state, now, prevSnake, prevFood, interpT) {
     if (!ctx) {
       return;
     }

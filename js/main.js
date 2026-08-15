@@ -215,7 +215,7 @@
       prevSnake = null;
       prevFood = null;
     }
-    Snake.render.draw(state, now, prevSnake, interpT);
+    Snake.render.draw(state, now, prevSnake, prevFood, interpT);
   }
 
   function init() {
