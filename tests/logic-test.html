@@ -173,14 +173,34 @@
         ok(hasEvent(result.events, 'levelUp'), '触发 levelUp');
       });
 
-      test('障碍随关卡递增', function () {
-        eq(S.buildObstacles(1).length, 0, '1 级无障碍');
-        const l2 = S.buildObstacles(2).length;
-        const l3 = S.buildObstacles(3).length;
-        const l4 = S.buildObstacles(4).length;
-        ok(l2 > 0, '2 级有障碍');
-        ok(l3 > l2, '3 级障碍更多');
-        ok(l4 >= l3, '4 级障碍不减');
+      test('障碍随关卡递增且不贴墙', function () {
+        const g = S.createGame();
+        g.snake = [{ x: 5, y: 5 }, { x: 4, y: 5 }, { x: 3, y: 5 }, { x: 2, y: 5 }];
+        g.direction = { x: 1, y: 0 };
+        g.queue = [];
+        g.food = { x: 6, y: 5 };
+        g.obstacles = [];
+        g.eaten = 2;
+        const r = S.step(g); // 吃第 3 个 -> 升到 2 级
+        eq(r.state.level, 2, '升到 2 级');
+        ok(r.state.obstacles.length > 0, '新增障碍');
+        ok(r.state.obstacles.length <= cfg.OBSTACLES_PER_LEVEL, '每级新增几个');
+        const notWall = r.state.obstacles.every(function (o) {
+          return o.x >= 1 && o.y >= 1 && o.x < cfg.GRID_SIZE - 1 && o.y < cfg.GRID_SIZE - 1;
+        });
+        ok(notWall, '障碍不贴墙');
+      });
+
+      test('障碍均匀分布', function () {
+        const g = S.createGame();
+        g.obstacles = [];
+        S.addObstacles(g, 8);
+        eq(g.obstacles.length, 8, '新增 8 个障碍');
+        const zones = new Set();
+        g.obstacles.forEach(function (o) {
+          zones.add(Math.floor(o.x / 4) + ':' + Math.floor(o.y / 4));
+        });
+        ok(zones.size >= 6, '障碍分散在多个区域（' + zones.size + ' 个区域）');
       });
 
       test('食物生成避开蛇与障碍', function () {

@@ -47,21 +47,59 @@
     };
   }
 
-  function buildObstacles(level) {
-    // 障碍数量随关卡递增，位置随机（每次游玩都不同）
-    const count = Math.min(cfg.MAX_OBSTACLES, Math.max(0, (level - 1) * cfg.OBSTACLES_PER_LEVEL));
-    const seen = new Set();
-    const cells = [];
-    while (cells.length < count) {
-      const x = Math.floor(Math.random() * cfg.GRID_SIZE);
-      const y = Math.floor(Math.random() * cfg.GRID_SIZE);
-      const k = x + ':' + y;
-      if (!seen.has(k)) {
-        seen.add(k);
-        cells.push({ x: x, y: y });
+  function addObstacles(state, count) {
+    const target = Math.min(cfg.MAX_OBSTACLES, state.obstacles.length + count);
+    const toAdd = target - state.obstacles.length;
+    if (toAdd <= 0) {
+      return 0;
+    }
+    const snakeSet = new Set(state.snake.map(keyOf));
+    const obstacleSet = new Set(state.obstacles.map(keyOf));
+    const brokenSet = new Set(state.brokenObstacles);
+
+    // 均匀分布：把棋盘划分为若干区域，每轮每个区域最多放一个新障碍
+    const zoneSize = 4;
+    const zonesX = Math.floor(cfg.GRID_SIZE / zoneSize);
+    const zonesY = Math.floor(cfg.GRID_SIZE / zoneSize);
+    const zones = [];
+    for (let zy = 0; zy < zonesY; zy++) {
+      for (let zx = 0; zx < zonesX; zx++) {
+        zones.push({ zx: zx, zy: zy });
       }
     }
-    return cells;
+    // 打乱区域顺序，保证障碍分散
+    for (let i = zones.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = zones[i];
+      zones[i] = zones[j];
+      zones[j] = tmp;
+    }
+
+    const added = [];
+    for (let zi = 0; zi < zones.length && added.length < toAdd; zi++) {
+      const zone = zones[zi];
+      const candidates = [];
+      for (let y = zone.zy * zoneSize; y < (zone.zy + 1) * zoneSize; y++) {
+        for (let x = zone.zx * zoneSize; x < (zone.zx + 1) * zoneSize; x++) {
+          // 不贴墙：留出边界一圈
+          if (x < 1 || y < 1 || x >= cfg.GRID_SIZE - 1 || y >= cfg.GRID_SIZE - 1) {
+            continue;
+          }
+          const k = x + ':' + y;
+          if (snakeSet.has(k) || obstacleSet.has(k) || brokenSet.has(k)) {
+            continue;
+          }
+          candidates.push({ x: x, y: y });
+        }
+      }
+      if (candidates.length) {
+        const cell = candidates[Math.floor(Math.random() * candidates.length)];
+        obstacleSet.add(keyOf(cell));
+        added.push(cell);
+      }
+    }
+    state.obstacles = state.obstacles.concat(added);
+    return added.length;
   }
 
   function emptyCells(state) {
@@ -308,11 +346,8 @@
       if (newLevel !== next.level) {
         next.level = newLevel;
         next.tickMs = tickMsForLevel(newLevel);
-        const snakeSet = new Set(next.snake.map(keyOf));
-        const brokenSet = new Set(next.brokenObstacles);
-        next.obstacles = buildObstacles(newLevel)
-          .filter(function (o) { return !snakeSet.has(keyOf(o)); })
-          .filter(function (o) { return !brokenSet.has(keyOf(o)); });
+        // 每级新增几个障碍物（均匀分布、不贴墙、避开蛇与已击碎）
+        addObstacles(next, cfg.OBSTACLES_PER_LEVEL);
         events.push('levelUp');
       }
 
@@ -390,7 +425,7 @@
       foodFreezeSteps: 0,
       bullets: 0,
       brokenObstacles: [],
-      obstacles: buildObstacles(1),
+      obstacles: [],
       score: 0,
       eaten: 0,
       level: 1,
@@ -411,7 +446,7 @@
     moveItem: moveItem,
     spawnItem: spawnItem,
     shoot: shoot,
-    buildObstacles: buildObstacles,
+    addObstacles: addObstacles,
     checkCollision: checkCollision,
     queueDirection: queueDirection,
     emptyCells: emptyCells,
