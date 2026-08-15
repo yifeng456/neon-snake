@@ -138,14 +138,17 @@
     });
   }
 
-  function drawFood(state, now) {
+  function drawFood(state, now, prevFood, interpT) {
     if (!state.food) {
       return;
     }
     const cell = cssSize / cfg.GRID_SIZE;
+    // 平滑插值食物位置
+    const fx = prevFood ? prevFood.x + (state.food.x - prevFood.x) * interpT : state.food.x;
+    const fy = prevFood ? prevFood.y + (state.food.y - prevFood.y) * interpT : state.food.y;
     const pulse = 1 + 0.12 * Math.sin(now / 180);
-    const cx = (state.food.x + 0.5) * cell;
-    const cy = (state.food.y + 0.5) * cell;
+    const cx = (fx + 0.5) * cell;
+    const cy = (fy + 0.5) * cell;
     const rad = cell * 0.32 * pulse;
 
     // 外层光晕
@@ -367,7 +370,7 @@
     drawStars(now);
     drawGrid();
     drawObstacles(state, now);
-    drawFood(state, now);
+    drawFood(state, now, prevFood, interpT);
     drawSnake(state, prevSnake, interpT);
     updateEffects();
     drawEffects();

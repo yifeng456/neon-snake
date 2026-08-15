@@ -31,6 +31,7 @@
   let last = null;
   let acc = 0;
   let prevSnake = null;
+  let prevFood = null;
   let best = 0;
   let muted = false;
 
@@ -122,6 +123,7 @@
     acc = 0;
     last = null;
     prevSnake = null;
+    prevFood = null;
     updateHud();
     Snake.audio.startMusic();
   }
@@ -193,12 +195,17 @@
       last = now;
       while (phase === 'running' && acc >= state.tickMs) {
         acc -= state.tickMs;
-        // 记录本次移动前的蛇身位置，用于平滑插值
+        // 记录本次移动前的蛇身与食物位置，用于平滑插值
         prevSnake = state.snake.map(function (c) {
           return { x: c.x, y: c.y };
         });
+        const prevFoodPos = state.food
+          ? { x: state.food.x, y: state.food.y }
+          : null;
         const result = Snake.step(state);
         state = result.state;
+        // 吃食后食物重新生成，直接出现，不做插值
+        prevFood = result.events.indexOf('ate') !== -1 ? null : prevFoodPos;
         handleEvents(result.events);
       }
       interpT = Math.min(1, Math.max(0, acc / state.tickMs));
@@ -206,6 +213,7 @@
       last = null;
       acc = 0;
       prevSnake = null;
+      prevFood = null;
     }
     Snake.render.draw(state, now, prevSnake, interpT);
   }
