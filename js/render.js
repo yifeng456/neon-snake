@@ -9,6 +9,8 @@
   let dpr = 1;
   let stars = null;
   let effects = [];
+  let headPulseT = 0;
+  const HEAD_PULSE_MAX = 18;
 
   function init(el) {
     canvas = el;
@@ -179,6 +181,7 @@
   function drawSnake(state) {
     const cell = cssSize / cfg.GRID_SIZE;
     const len = state.snake.length;
+    const s = headScale();
     for (let i = len - 1; i >= 0; i--) {
       const seg = state.snake[i];
       const t = len === 1 ? 0 : i / (len - 1);
@@ -187,8 +190,16 @@
       const x = seg.x * cell;
       const y = seg.y * cell;
 
+      // 蛇头吞咽动画：放大再弹回
+      let size = cell - 3;
+      let pad = 1.5;
+      if (i === 0) {
+        size = (cell - 3) * s;
+        pad = 1.5 - (size - (cell - 3)) / 2;
+      }
+
       ctx.shadowColor = 'hsla(' + hue + ', 95%, 55%, 0.85)';
-      ctx.shadowBlur = i === 0 ? 20 : 11;
+      ctx.shadowBlur = i === 0 ? 20 + (s - 1) * 40 : 11;
 
       // 垂直渐变，模拟霓虹灯管（上亮下暗）
       const g = ctx.createLinearGradient(x, y, x, y + cell);
@@ -196,7 +207,7 @@
       g.addColorStop(0.5, 'hsl(' + hue + ', 95%, ' + light + '%)');
       g.addColorStop(1, 'hsl(' + hue + ', 90%, ' + Math.max(26, light - 15) + '%)');
       ctx.fillStyle = g;
-      roundRect(x + 1.5, y + 1.5, cell - 3, cell - 3, 5);
+      roundRect(x + pad, y + pad, size, size, 5);
       ctx.fill();
 
       // 顶部高光条（模拟灯管反光）
@@ -215,16 +226,16 @@
       const dy = state.direction.y;
       const px = -dy;
       const py = dx;
-      const fwd = cell * 0.16;
-      const side = cell * 0.17;
+      const fwd = cell * 0.16 * s;
+      const side = cell * 0.17 * s;
       ctx.fillStyle = '#05070f';
       ctx.shadowColor = 'rgba(0, 229, 255, 0.9)';
       ctx.shadowBlur = 4;
-      [1, -1].forEach(function (s) {
+      [1, -1].forEach(function (k) {
         ctx.beginPath();
         ctx.arc(
-          hx + dx * fwd + px * side * s,
-          hy + dy * fwd + py * side * s,
+          hx + dx * fwd + px * side * k,
+          hy + dy * fwd + py * side * k,
           cell * 0.08,
           0,
           Math.PI * 2
@@ -239,6 +250,7 @@
     const cell = cssSize / cfg.GRID_SIZE;
     const cx = (gx + 0.5) * cell;
     const cy = (gy + 0.5) * cell;
+    headPulseT = 0; // 触发蛇头吞咽动画
 
     // 粒子火花爆发（金色）
     for (let i = 0; i < 16; i++) {
@@ -278,6 +290,14 @@
     });
   }
 
+  function headScale() {
+    if (headPulseT >= HEAD_PULSE_MAX) {
+      return 1;
+    }
+    // 阻尼正弦：先膨大，再回弹（略小于 1），最后恢复
+    return 1 + 0.7 * Math.sin(0.45 * headPulseT) * Math.exp(-0.22 * headPulseT);
+  }
+
   function updateEffects() {
     const cell = cssSize / cfg.GRID_SIZE;
     for (let i = effects.length - 1; i >= 0; i--) {
@@ -294,6 +314,7 @@
         effects.splice(i, 1);
       }
     }
+    headPulseT = Math.min(headPulseT + 1, HEAD_PULSE_MAX);
   }
 
   function drawEffects() {
