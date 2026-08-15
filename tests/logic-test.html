@@ -173,11 +173,14 @@
         ok(hasEvent(result.events, 'levelUp'), '触发 levelUp');
       });
 
-      test('障碍图案循环', function () {
+      test('障碍随关卡递增', function () {
         eq(S.buildObstacles(1).length, 0, '1 级无障碍');
-        ok(S.buildObstacles(2).length > 0, '2 级有障碍');
-        ok(S.buildObstacles(3).length > 0, '3 级有障碍');
-        eq(S.buildObstacles(4).length, 0, '4 级循环回无障碍');
+        const l2 = S.buildObstacles(2).length;
+        const l3 = S.buildObstacles(3).length;
+        const l4 = S.buildObstacles(4).length;
+        ok(l2 > 0, '2 级有障碍');
+        ok(l3 > l2, '3 级障碍更多');
+        ok(l4 >= l3, '4 级障碍不减');
       });
 
       test('食物生成避开蛇与障碍', function () {
