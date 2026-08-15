@@ -12,6 +12,10 @@
     score: $('#score'),
     level: $('#level'),
     best: $('#best'),
+    bullets: $('#bullets'),
+    bulletStat: $('#bulletStat'),
+    invisibleTime: $('#invisibleTime'),
+    invisibleStat: $('#invisibleStat'),
     pauseBtn: $('#pauseBtn'),
     muteBtn: $('#muteBtn'),
     startOverlay: $('#startOverlay'),
@@ -32,6 +36,7 @@
   let acc = 0;
   let prevSnake = null;
   let prevFood = null;
+  let prevItem = null;
   let best = 0;
   let muted = false;
 
@@ -71,6 +76,20 @@
     els.best.textContent = String(best);
   }
 
+  function updatePowerHud() {
+    const hasBullets = state.bullets > 0;
+    els.bulletStat.classList.toggle('hidden', !hasBullets);
+    if (hasBullets) {
+      els.bullets.textContent = String(state.bullets);
+    }
+    const invisible = state.invisibleSteps > 0;
+    els.invisibleStat.classList.toggle('hidden', !invisible);
+    if (invisible) {
+      const secs = Math.max(1, Math.ceil(state.invisibleSteps * state.tickMs / 1000));
+      els.invisibleTime.textContent = secs + 's';
+    }
+  }
+
   function updatePauseButton() {
     els.pauseBtn.classList.toggle('paused', phase === 'paused');
   }
@@ -105,6 +124,9 @@
       } else if (name === 'levelUp') {
         Snake.audio.play('levelUp');
         updateHud();
+      } else if (name === 'itemInvisible' || name === 'itemBullets') {
+        Snake.audio.play('item');
+        updatePowerHud();
       } else if (name === 'gameOver') {
         Snake.audio.play('gameOver');
         finishGame(false);
@@ -124,7 +146,9 @@
     last = null;
     prevSnake = null;
     prevFood = null;
+    prevItem = null;
     updateHud();
+    updatePowerHud();
     Snake.audio.startMusic();
   }
 
@@ -184,6 +208,19 @@
     }
   }
 
+  function onShoot() {
+    if (phase !== 'running') {
+      return;
+    }
+    const head = state.snake[0];
+    const broken = Snake.shoot(state);
+    if (broken) {
+      Snake.render.spawnShootEffect(head.x, head.y, broken.x, broken.y);
+      Snake.audio.play('shoot');
+      updatePowerHud();
+    }
+  }
+
   function frame(now) {
     rafId = requestAnimationFrame(frame);
     let interpT = 0;
@@ -195,18 +232,26 @@
       last = now;
       while (phase === 'running' && acc >= state.tickMs) {
         acc -= state.tickMs;
-        // 记录本次移动前的蛇身与食物位置，用于平滑插值
+        // 记录本次移动前的蛇身/食物/道具位置，用于平滑插值
         prevSnake = state.snake.map(function (c) {
           return { x: c.x, y: c.y };
         });
         const prevFoodPos = state.food
           ? { x: state.food.x, y: state.food.y }
           : null;
+        const prevItemPos = state.item
+          ? { x: state.item.x, y: state.item.y }
+          : null;
         const result = Snake.step(state);
         state = result.state;
-        // 吃食后食物重新生成，直接出现，不做插值
-        prevFood = result.events.indexOf('ate') !== -1 ? null : prevFoodPos;
-        handleEvents(result.events);
+        const ev = result.events;
+        const ate = ev.indexOf('ate') !== -1;
+        const levelUp = ev.indexOf('levelUp') !== -1;
+        const tookItem = ev.indexOf('itemInvisible') !== -1 || ev.indexOf('itemBullets') !== -1;
+        // 吃食/拾取道具/升级刷新时，食物与道具直接出现，不做插值
+        prevFood = ate ? null : prevFoodPos;
+        prevItem = (tookItem || levelUp) ? null : prevItemPos;
+        handleEvents(ev);
       }
       interpT = Math.min(1, Math.max(0, acc / state.tickMs));
     } else {
@@ -214,8 +259,10 @@
       acc = 0;
       prevSnake = null;
       prevFood = null;
+      prevItem = null;
     }
-    Snake.render.draw(state, now, prevSnake, prevFood, interpT);
+    updatePowerHud();
+    Snake.render.draw(state, now, prevSnake, prevFood, prevItem, interpT);
   }
 
   function init() {
@@ -258,7 +305,8 @@
       onDirection: onDirection,
       onTogglePause: togglePause,
       onToggleMute: toggleMute,
-      onConfirm: onConfirm
+      onConfirm: onConfirm,
+      onShoot: onShoot
     });
 
     rafId = requestAnimationFrame(frame);

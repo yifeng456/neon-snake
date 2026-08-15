@@ -29,6 +29,11 @@
       queue: state.queue.map(function (d) { return { x: d.x, y: d.y }; }),
       food: state.food ? { x: state.food.x, y: state.food.y } : null,
       foodMoveCounter: state.foodMoveCounter,
+      item: state.item ? { x: state.item.x, y: state.item.y } : null,
+      itemMoveCounter: state.itemMoveCounter,
+      invisibleSteps: state.invisibleSteps,
+      bullets: state.bullets,
+      brokenObstacles: state.brokenObstacles.slice(),
       obstacles: state.obstacles.map(function (c) { return { x: c.x, y: c.y }; }),
       score: state.score,
       eaten: state.eaten,
@@ -102,6 +107,9 @@
     const occupied = new Set();
     state.snake.forEach(function (c) { occupied.add(keyOf(c)); });
     state.obstacles.forEach(function (c) { occupied.add(keyOf(c)); });
+    if (state.item) {
+      occupied.add(keyOf(state.item));
+    }
     const cells = [];
     for (let y = 0; y < cfg.GRID_SIZE; y++) {
       for (let x = 0; x < cfg.GRID_SIZE; x++) {
@@ -121,19 +129,22 @@
     return cells[Math.floor(Math.random() * cells.length)];
   }
 
-  function moveFood(state) {
-    if (!state.food) {
-      return null;
-    }
+  function moveAway(state, obj) {
     const head = state.snake[0];
     const occupied = new Set();
     state.snake.forEach(function (c) { occupied.add(keyOf(c)); });
     state.obstacles.forEach(function (c) { occupied.add(keyOf(c)); });
+    if (state.food && state.food !== obj) {
+      occupied.add(keyOf(state.food));
+    }
+    if (state.item && state.item !== obj) {
+      occupied.add(keyOf(state.item));
+    }
     const candidates = [];
     Object.keys(DIRS).forEach(function (name) {
       const d = DIRS[name];
-      const x = state.food.x + d.x;
-      const y = state.food.y + d.y;
+      const x = obj.x + d.x;
+      const y = obj.y + d.y;
       if (!inside(x, y) || occupied.has(x + ':' + y)) {
         return;
       }
@@ -144,12 +155,64 @@
       });
     });
     if (!candidates.length) {
-      return state.food;
+      return obj;
     }
     candidates.sort(function (a, b) { return b.dist - a.dist; });
     const bestDist = candidates[0].dist;
     const best = candidates.filter(function (c) { return c.dist === bestDist; });
     return best[Math.floor(Math.random() * best.length)];
+  }
+
+  function moveFood(state) {
+    if (!state.food) {
+      return null;
+    }
+    return moveAway(state, state.food);
+  }
+
+  function moveItem(state) {
+    if (!state.item) {
+      return null;
+    }
+    return moveAway(state, state.item);
+  }
+
+  function spawnItem(state) {
+    const cells = emptyCells(state).filter(function (c) {
+      return !state.food || !same(c, state.food);
+    });
+    if (!cells.length) {
+      return null;
+    }
+    return cells[Math.floor(Math.random() * cells.length)];
+  }
+
+  function shoot(state) {
+    if (state.bullets <= 0) {
+      return null;
+    }
+    const head = state.snake[0];
+    const dir = state.direction;
+    let x = head.x + dir.x;
+    let y = head.y + dir.y;
+    while (inside(x, y)) {
+      const idx = state.obstacles.findIndex(function (o) {
+        return o.x === x && o.y === y;
+      });
+      if (idx !== -1) {
+        const broken = state.obstacles[idx];
+        const key = keyOf(broken);
+        if (state.brokenObstacles.indexOf(key) === -1) {
+          state.brokenObstacles.push(key);
+        }
+        state.obstacles.splice(idx, 1);
+        state.bullets -= 1;
+        return { x: broken.x, y: broken.y };
+      }
+      x += dir.x;
+      y += dir.y;
+    }
+    return null;
   }
 
   function queueDirection(state, dir) {
@@ -200,14 +263,30 @@
     if (next.queue.length) {
       next.direction = next.queue.shift();
     }
+
+    const invisible = next.invisibleSteps > 0;
+    if (invisible) {
+      next.invisibleSteps -= 1;
+    }
+
     const head = next.snake[0];
-    const newHead = {
+    let newHead = {
       x: head.x + next.direction.x,
       y: head.y + next.direction.y
     };
+
+    // 隐身时穿墙：从相反方向出现
+    if (invisible && !inside(newHead.x, newHead.y)) {
+      newHead.x = (newHead.x + cfg.GRID_SIZE) % cfg.GRID_SIZE;
+      newHead.y = (newHead.y + cfg.GRID_SIZE) % cfg.GRID_SIZE;
+    }
+
     const willEat = !!next.food && same(newHead, next.food);
+    const willTakeItem = !!next.item && same(newHead, next.item);
     const bodyToCheck = willEat ? next.snake : next.snake.slice(0, -1);
-    const hit = hitPoint(newHead, bodyToCheck, next.obstacles);
+    // 隐身时可穿过障碍物
+    const obstacles = invisible ? [] : next.obstacles;
+    const hit = hitPoint(newHead, bodyToCheck, obstacles);
     const events = [];
 
     if (hit) {
@@ -220,6 +299,19 @@
       ? [newHead].concat(next.snake)
       : [newHead].concat(next.snake.slice(0, -1));
 
+    // 拾取道具：随机触发隐身或子弹
+    if (willTakeItem) {
+      if (Math.random() < 0.5) {
+        next.invisibleSteps = Math.round(cfg.INVISIBLE_MS / next.tickMs);
+        events.push('itemInvisible');
+      } else {
+        next.bullets += cfg.BULLETS_ON_PICKUP;
+        events.push('itemBullets');
+      }
+      next.item = null;
+      next.itemMoveCounter = 0;
+    }
+
     if (willEat) {
       next.score += cfg.POINTS_PER_FOOD;
       next.eaten += 1;
@@ -230,9 +322,18 @@
         next.level = newLevel;
         next.tickMs = tickMsForLevel(newLevel);
         const snakeSet = new Set(next.snake.map(keyOf));
-        next.obstacles = buildObstacles(newLevel).filter(function (o) {
-          return !snakeSet.has(keyOf(o));
-        });
+        const brokenSet = new Set(next.brokenObstacles);
+        next.obstacles = buildObstacles(newLevel)
+          .filter(function (o) { return !snakeSet.has(keyOf(o)); })
+          .filter(function (o) { return !brokenSet.has(keyOf(o)); });
+        // 从第 3 关开始，每个关卡刷新一个道具
+        if (newLevel >= cfg.ITEM_MIN_LEVEL) {
+          next.item = null;
+          next.item = spawnItem(next);
+        } else {
+          next.item = null;
+        }
+        next.itemMoveCounter = 0;
         events.push('levelUp');
       }
 
@@ -257,6 +358,18 @@
       }
     }
 
+    // 道具移动（速度锁定为关卡一速度）
+    if (next.item) {
+      next.itemMoveCounter += 1;
+      if (next.itemMoveCounter >= cfg.ITEM_MOVE_INTERVAL) {
+        const moved = moveItem(next);
+        if (moved) {
+          next.item = moved;
+        }
+        next.itemMoveCounter = 0;
+      }
+    }
+
     return { state: next, events: events };
   }
 
@@ -273,6 +386,11 @@
       queue: [],
       food: null,
       foodMoveCounter: 0,
+      item: null,
+      itemMoveCounter: 0,
+      invisibleSteps: 0,
+      bullets: 0,
+      brokenObstacles: [],
       obstacles: buildObstacles(1),
       score: 0,
       eaten: 0,
@@ -291,6 +409,9 @@
     step: step,
     spawnFood: spawnFood,
     moveFood: moveFood,
+    moveItem: moveItem,
+    spawnItem: spawnItem,
+    shoot: shoot,
     buildObstacles: buildObstacles,
     checkCollision: checkCollision,
     queueDirection: queueDirection,

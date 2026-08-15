@@ -26,7 +26,14 @@
         e.preventDefault();
         return;
       }
-      if (e.code === 'Space' || e.code === 'KeyP') {
+      if (e.code === 'Space') {
+        if (handlers.onShoot) {
+          handlers.onShoot();
+        }
+        e.preventDefault();
+        return;
+      }
+      if (e.code === 'KeyP' || e.code === 'Escape') {
         if (handlers.onTogglePause) {
           handlers.onTogglePause();
         }
@@ -67,6 +74,10 @@
       const dy = t.clientY - touchStart.y;
       touchStart = null;
       if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) {
+        // 点击：射击
+        if (handlers.onShoot) {
+          handlers.onShoot();
+        }
         return;
       }
       const name = Math.abs(dx) > Math.abs(dy)

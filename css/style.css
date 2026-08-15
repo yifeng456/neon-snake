@@ -110,6 +110,14 @@ body::before {
   color: var(--lime);
 }
 
+#bulletStat strong {
+  color: var(--amber);
+}
+
+#invisibleStat strong {
+  color: var(--cyan);
+}
+
 .controls {
   display: flex;
   gap: 8px;
@@ -207,6 +215,10 @@ body::before {
   place-items: center;
   background: rgba(7, 12, 24, 0.72);
   backdrop-filter: blur(2px);
+}
+
+.hidden {
+  display: none !important;
 }
 
 .overlay.hidden {

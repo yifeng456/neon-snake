@@ -206,6 +206,13 @@
       case 'click':
         tone('square', 260, 220, 0.06, 0.07);
         break;
+      case 'shoot':
+        tone('square', 1200, 420, 0.09, 0.2);
+        break;
+      case 'item':
+        tone('triangle', 523, 1046, 0.14, 0.16);
+        tone('triangle', 784, 1568, 0.16, 0.12, 0.1);
+        break;
     }
   }
 

@@ -267,6 +267,55 @@
         eq(S.spawnFood(g), null, 'spawnFood 返回 null');
       });
 
+      test('道具从第 3 关开始生成', function () {
+        const g = S.createGame();
+        g.snake = [{ x: 5, y: 5 }, { x: 4, y: 5 }, { x: 3, y: 5 }, { x: 2, y: 5 }];
+        g.direction = { x: 1, y: 0 };
+        g.queue = [];
+        g.food = { x: 6, y: 5 };
+        g.obstacles = [];
+        g.eaten = 5;
+        const result = S.step(g);
+        eq(result.state.level, 3, '升到 3 级');
+        ok(result.state.item, '生成道具');
+      });
+
+      test('隐身穿墙与穿障碍', function () {
+        const w = S.createGame();
+        w.invisibleSteps = 100;
+        w.snake = [{ x: 0, y: 5 }, { x: 1, y: 5 }, { x: 2, y: 5 }, { x: 3, y: 5 }];
+        w.direction = { x: -1, y: 0 };
+        w.queue = [];
+        w.food = { x: 20, y: 20 };
+        w.obstacles = [];
+        const r = S.step(w);
+        eq(r.state.snake[0].x, 23, '穿墙包裹');
+        ok(r.state.phase !== 'ended', '未死亡');
+
+        const o = S.createGame();
+        o.invisibleSteps = 100;
+        o.snake = [{ x: 5, y: 5 }, { x: 4, y: 5 }, { x: 3, y: 5 }, { x: 2, y: 5 }];
+        o.direction = { x: 1, y: 0 };
+        o.queue = [];
+        o.food = { x: 20, y: 20 };
+        o.obstacles = [{ x: 6, y: 5 }];
+        const ro = S.step(o);
+        ok(ro.state.phase !== 'ended', '穿过障碍不死亡');
+      });
+
+      test('射击击碎障碍并永久保留', function () {
+        const g = S.createGame();
+        g.bullets = 10;
+        g.snake = [{ x: 5, y: 5 }, { x: 4, y: 5 }, { x: 3, y: 5 }, { x: 2, y: 5 }];
+        g.direction = { x: 1, y: 0 };
+        g.obstacles = [{ x: 8, y: 5 }];
+        const hit = S.shoot(g);
+        ok(hit && hit.x === 8, '命中障碍');
+        eq(g.bullets, 9, '子弹减少');
+        eq(g.obstacles.length, 0, '障碍移除');
+        ok(g.brokenObstacles.indexOf('8:5') !== -1, '记录击碎');
+      });
+
       const passCount = results.filter(function (r) { return r.ok; }).length;
       document.getElementById('summary').textContent =
         passCount + ' / ' + results.length + ' 通过';

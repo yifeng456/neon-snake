@@ -212,10 +212,52 @@
     ctx.stroke();
   }
 
+  function drawItem(state, now, prevItem, interpT) {
+    if (!state.item) {
+      return;
+    }
+    const cell = cssSize / cfg.GRID_SIZE;
+    const ix = prevItem ? prevItem.x + (state.item.x - prevItem.x) * interpT : state.item.x;
+    const iy = prevItem ? prevItem.y + (state.item.y - prevItem.y) * interpT : state.item.y;
+    const pulse = 1 + 0.08 * Math.sin(now / 260);
+    const cx = (ix + 0.5) * cell;
+    const cy = (iy + 0.5) * cell;
+    const size = cell * 0.68 * pulse;
+
+    // 白色发光方块
+    ctx.shadowColor = 'rgba(255, 255, 255, 0.95)';
+    ctx.shadowBlur = 18;
+    const g = ctx.createLinearGradient(cx - size / 2, cy - size / 2, cx - size / 2, cy + size / 2);
+    g.addColorStop(0, '#ffffff');
+    g.addColorStop(1, '#cfd9ff');
+    ctx.fillStyle = g;
+    roundRect(cx - size / 2, cy - size / 2, size, size, 4);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // 描边
+    ctx.strokeStyle = 'rgba(200, 220, 255, 0.9)';
+    ctx.lineWidth = 1.2;
+    roundRect(cx - size / 2, cy - size / 2, size, size, 4);
+    ctx.stroke();
+
+    // 问号
+    ctx.fillStyle = '#1a2a4a';
+    ctx.font = 'bold ' + Math.round(size * 0.62) + 'px "Segoe UI", "Microsoft YaHei", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('?', cx, cy + size * 0.03);
+  }
+
   function drawSnake(state, prevSnake, interpT) {
     const cell = cssSize / cfg.GRID_SIZE;
     const len = state.snake.length;
     const s = headScale();
+    const invisible = state.invisibleSteps > 0;
+    if (invisible) {
+      ctx.save();
+      ctx.globalAlpha = 0.35;
+    }
     for (let i = len - 1; i >= 0; i--) {
       const seg = state.snake[i];
       const col = segmentColor(i);
@@ -302,6 +344,10 @@
         ctx.fill();
       }
     }
+
+    if (invisible) {
+      ctx.restore();
+    }
   }
 
   function spawnEatEffect(gx, gy) {
@@ -346,6 +392,52 @@
       maxLife: 12,
       r0: cell * 0.2,
       r1: cell * 0.9
+    });
+  }
+
+  function spawnShootEffect(hgx, hgy, tgx, tgy) {
+    const cell = cssSize / cfg.GRID_SIZE;
+    const hx = (hgx + 0.5) * cell;
+    const hy = (hgy + 0.5) * cell;
+    const tx = (tgx + 0.5) * cell;
+    const ty = (tgy + 0.5) * cell;
+
+    // 光束
+    effects.push({
+      type: 'beam',
+      x0: hx,
+      y0: hy,
+      x1: tx,
+      y1: ty,
+      life: 0,
+      maxLife: 12
+    });
+    // 击碎爆裂粒子（青白）
+    for (let i = 0; i < 12; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const spd = cell * (0.1 + Math.random() * 0.2);
+      effects.push({
+        type: 'spark',
+        x: tx,
+        y: ty,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd,
+        life: 0,
+        maxLife: 22 + Math.floor(Math.random() * 14),
+        size: cell * (0.05 + Math.random() * 0.08),
+        hue: 185 + Math.floor(Math.random() * 30)
+      });
+    }
+    // 爆闪（青白）
+    effects.push({
+      type: 'flash',
+      x: tx,
+      y: ty,
+      life: 0,
+      maxLife: 10,
+      r0: cell * 0.15,
+      r1: cell * 0.7,
+      rgb: '150, 235, 255'
     });
   }
 
@@ -412,11 +504,21 @@
         ctx.beginPath();
         ctx.arc(e.x, e.y, r, 0, Math.PI * 2);
         ctx.stroke();
+      } else if (e.type === 'beam') {
+        ctx.strokeStyle = 'rgba(120, 230, 255, ' + a + ')';
+        ctx.lineWidth = 2.5 * (1 - t) + 0.5;
+        ctx.shadowColor = 'rgba(0, 229, 255, ' + a + ')';
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.moveTo(e.x0, e.y0);
+        ctx.lineTo(e.x1, e.y1);
+        ctx.stroke();
       } else if (e.type === 'flash') {
         const r = e.r0 + (e.r1 - e.r0) * t;
+        const rgb = e.rgb || '255, 240, 190';
         const g = ctx.createRadialGradient(e.x, e.y, 0, e.x, e.y, r);
-        g.addColorStop(0, 'rgba(255, 240, 190, ' + (a * 0.9) + ')');
-        g.addColorStop(1, 'rgba(255, 214, 64, 0)');
+        g.addColorStop(0, 'rgba(' + rgb + ', ' + (a * 0.9) + ')');
+        g.addColorStop(1, 'rgba(' + rgb + ', 0)');
         ctx.fillStyle = g;
         ctx.beginPath();
         ctx.arc(e.x, e.y, r, 0, Math.PI * 2);
@@ -426,7 +528,7 @@
     ctx.shadowBlur = 0;
   }
 
-  function draw(state, now, prevSnake, prevFood, interpT) {
+  function draw(state, now, prevSnake, prevFood, prevItem, interpT) {
     if (!ctx) {
       return;
     }
@@ -436,6 +538,7 @@
     drawGrid();
     drawObstacles(state, now);
     drawFood(state, now, prevFood, interpT);
+    drawItem(state, now, prevItem, interpT);
     drawSnake(state, prevSnake, interpT);
     updateEffects();
     drawEffects();
@@ -445,6 +548,7 @@
     init: init,
     resize: resize,
     draw: draw,
-    spawnEatEffect: spawnEatEffect
+    spawnEatEffect: spawnEatEffect,
+    spawnShootEffect: spawnShootEffect
   };
 })();

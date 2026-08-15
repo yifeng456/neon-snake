@@ -12,6 +12,10 @@
     FOOD_MOVE_BASE: 5,
     FOOD_MOVE_MIN: 2,
     FOOD_MOVE_STEP: 3,
+    ITEM_MIN_LEVEL: 3,
+    ITEM_MOVE_INTERVAL: 5,
+    INVISIBLE_MS: 30000,
+    BULLETS_ON_PICKUP: 10,
     MAX_QUEUE: 2,
     BEST_KEY: 'snake-neon-best-v1',
     MUTE_KEY: 'snake-neon-muted-v1'
