@@ -267,17 +267,17 @@
         eq(S.spawnFood(g), null, 'spawnFood 返回 null');
       });
 
-      test('道具从第 3 关开始生成', function () {
+      test('得分达到 130 后道具出现', function () {
         const g = S.createGame();
+        g.score = 130;
         g.snake = [{ x: 5, y: 5 }, { x: 4, y: 5 }, { x: 3, y: 5 }, { x: 2, y: 5 }];
         g.direction = { x: 1, y: 0 };
         g.queue = [];
-        g.food = { x: 6, y: 5 };
+        g.food = { x: 20, y: 20 };
         g.obstacles = [];
-        g.eaten = 5;
         const result = S.step(g);
-        eq(result.state.level, 3, '升到 3 级');
-        ok(result.state.item, '生成道具');
+        ok(result.state.item, '得分>=130 后生成道具');
+        ok(result.state.itemTimer > 0, '设置 30 秒计时器');
       });
 
       test('隐身穿墙与穿障碍', function () {

@@ -31,6 +31,7 @@
       foodMoveCounter: state.foodMoveCounter,
       item: state.item ? { x: state.item.x, y: state.item.y } : null,
       itemMoveCounter: state.itemMoveCounter,
+      itemTimer: state.itemTimer,
       invisibleSteps: state.invisibleSteps,
       freezeSteps: state.freezeSteps,
       foodFreezeSteps: state.foodFreezeSteps,
@@ -47,59 +48,17 @@
   }
 
   function buildObstacles(level) {
-    // 障碍随关卡递增：每一级在前一级基础上叠加一层（1 级无障碍）
-    const patches = [
-      // 第 2 关：四角方块 + 边沿横竖条
-      [[3, 3], [4, 3], [3, 4], [4, 4],
-       [20, 3], [21, 3], [20, 4], [21, 4],
-       [3, 20], [4, 20], [3, 21], [4, 21],
-       [20, 20], [21, 20], [20, 21], [21, 21],
-       [11, 2], [12, 2], [11, 21], [12, 21],
-       [2, 11], [2, 12], [21, 11], [21, 12]],
-      // 第 3 关：横竖长条
-      [[5, 3], [5, 4], [5, 5], [5, 6], [5, 7],
-       [18, 16], [18, 17], [18, 18], [18, 19], [18, 20], [18, 21],
-       [6, 18], [6, 19], [6, 20],
-       [8, 6], [9, 6], [10, 6], [11, 6], [12, 6], [13, 6], [14, 6],
-       [9, 17], [10, 17], [11, 17], [12, 17], [13, 17], [14, 17], [15, 17],
-       [2, 20], [3, 20], [2, 21], [3, 21],
-       [20, 3], [21, 3], [20, 4], [21, 4]],
-      // 第 4 关：边缘散块
-      [[6, 2], [7, 2], [16, 2], [17, 2],
-       [6, 21], [7, 21], [16, 21], [17, 21],
-       [2, 6], [2, 7], [2, 16], [2, 17],
-       [21, 6], [21, 7], [21, 16], [21, 17]],
-      // 第 5 关：内部方块
-      [[8, 8], [9, 8], [8, 9],
-       [15, 8], [16, 8], [15, 9],
-       [8, 15], [9, 15], [8, 16],
-       [15, 15], [16, 15], [15, 16]],
-      // 第 6 关：散点
-      [[6, 10], [7, 10], [6, 11],
-       [17, 10], [18, 10], [17, 11],
-       [6, 13], [7, 13], [6, 14],
-       [17, 13], [18, 13], [17, 14],
-       [10, 6], [11, 6], [10, 7],
-       [13, 17], [14, 17], [13, 18]],
-      // 第 7 关：中部环状
-      [[11, 9], [12, 9], [13, 9],
-       [11, 15], [12, 15], [13, 15],
-       [9, 11], [9, 12], [9, 13],
-       [15, 11], [15, 12], [15, 13],
-       [12, 6], [12, 7], [12, 17], [12, 18],
-       [6, 12], [7, 12], [17, 12], [18, 12]]
-    ];
-    const count = Math.min(Math.max(level - 1, 0), patches.length);
+    // 障碍数量随关卡递增，位置随机（每次游玩都不同）
+    const count = Math.min(cfg.MAX_OBSTACLES, Math.max(0, (level - 1) * cfg.OBSTACLES_PER_LEVEL));
     const seen = new Set();
     const cells = [];
-    for (let i = 0; i < count; i++) {
-      for (let j = 0; j < patches[i].length; j++) {
-        const p = patches[i][j];
-        const k = p[0] + ':' + p[1];
-        if (!seen.has(k)) {
-          seen.add(k);
-          cells.push({ x: p[0], y: p[1] });
-        }
+    while (cells.length < count) {
+      const x = Math.floor(Math.random() * cfg.GRID_SIZE);
+      const y = Math.floor(Math.random() * cfg.GRID_SIZE);
+      const k = x + ':' + y;
+      if (!seen.has(k)) {
+        seen.add(k);
+        cells.push({ x: x, y: y });
       }
     }
     return cells;
@@ -354,14 +313,6 @@
         next.obstacles = buildObstacles(newLevel)
           .filter(function (o) { return !snakeSet.has(keyOf(o)); })
           .filter(function (o) { return !brokenSet.has(keyOf(o)); });
-        // 从第 3 关开始，每个关卡刷新一个道具
-        if (newLevel >= cfg.ITEM_MIN_LEVEL) {
-          next.item = null;
-          next.item = spawnItem(next);
-        } else {
-          next.item = null;
-        }
-        next.itemMoveCounter = 0;
         events.push('levelUp');
       }
 
@@ -401,6 +352,20 @@
       }
     }
 
+    // 道具按时间刷新：得分达到阈值后，每 30 秒出现一次
+    if (next.score >= cfg.ITEM_MIN_SCORE) {
+      if (next.itemTimer <= 0) {
+        next.item = null;
+        next.item = spawnItem(next);
+        next.itemMoveCounter = 0;
+        next.itemTimer = Math.round(cfg.ITEM_SPAWN_MS / next.tickMs);
+      } else {
+        next.itemTimer -= 1;
+      }
+    } else {
+      next.itemTimer = 0;
+    }
+
     return { state: next, events: events };
   }
 
@@ -419,6 +384,7 @@
       foodMoveCounter: 0,
       item: null,
       itemMoveCounter: 0,
+      itemTimer: 0,
       invisibleSteps: 0,
       freezeSteps: 0,
       foodFreezeSteps: 0,
