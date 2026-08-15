@@ -142,6 +142,11 @@
     return Math.max(cfg.MIN_TICK_MS, cfg.BASE_TICK_MS - (level - 1) * cfg.TICK_STEP_MS);
   }
 
+  function foodMoveInterval(snakeLength) {
+    const interval = cfg.FOOD_MOVE_BASE - Math.floor((snakeLength - cfg.START_LENGTH) / cfg.FOOD_MOVE_STEP);
+    return Math.max(cfg.FOOD_MOVE_MIN, interval);
+  }
+
   function hitPoint(point, body, obstacles) {
     if (!inside(point.x, point.y)) {
       return 'wall';
@@ -212,7 +217,7 @@
       next.foodMoveCounter = 0;
     } else {
       next.foodMoveCounter += 1;
-      if (next.foodMoveCounter >= cfg.FOOD_MOVE_INTERVAL) {
+      if (next.foodMoveCounter >= foodMoveInterval(next.snake.length)) {
         const moved = moveFood(next);
         if (moved) {
           next.food = moved;
@@ -259,6 +264,7 @@
     checkCollision: checkCollision,
     queueDirection: queueDirection,
     emptyCells: emptyCells,
-    tickMsForLevel: tickMsForLevel
+    tickMsForLevel: tickMsForLevel,
+    foodMoveInterval: foodMoveInterval
   });
 })();

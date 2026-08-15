@@ -12,6 +12,16 @@
   let headPulseT = 0;
   const HEAD_PULSE_MAX = 18;
 
+  // 食物主题色（每吃一个循环切换）
+  const FOOD_COLORS = [
+    { mid: '#ffd640', edge: '#ff7a1a', rgb: '255, 214, 64' },   // 金黄
+    { mid: '#00e5ff', edge: '#0088cc', rgb: '0, 229, 255' },    // 青
+    { mid: '#ff3fa4', edge: '#c01870', rgb: '255, 63, 164' },   // 洋红
+    { mid: '#b6ff2e', edge: '#5fb400', rgb: '182, 255, 46' },   // 荧光绿
+    { mid: '#a06bff', edge: '#6a2ee0', rgb: '160, 107, 255' },  // 紫
+    { mid: '#ff7a4d', edge: '#e0421a', rgb: '255, 122, 77' }    // 橙红
+  ];
+
   function init(el) {
     canvas = el;
     ctx = canvas.getContext('2d');
@@ -150,16 +160,18 @@
     const cx = (fx + 0.5) * cell;
     const cy = (fy + 0.5) * cell;
     const rad = cell * 0.32 * pulse;
+    // 每吃一个食物换一种颜色
+    const col = FOOD_COLORS[state.eaten % FOOD_COLORS.length];
 
     // 外层光晕
-    ctx.shadowColor = 'rgba(255, 214, 64, 0.95)';
+    ctx.shadowColor = 'rgba(' + col.rgb + ', 0.95)';
     ctx.shadowBlur = 22;
 
-    // 径向渐变球体（白心 -> 金黄 -> 橙红）
+    // 径向渐变球体（白心 -> 主题色 -> 深色边缘）
     const g = ctx.createRadialGradient(cx - rad * 0.3, cy - rad * 0.3, rad * 0.1, cx, cy, rad);
-    g.addColorStop(0, '#fff8dc');
-    g.addColorStop(0.35, '#ffd640');
-    g.addColorStop(1, '#ff7a1a');
+    g.addColorStop(0, '#fff8e8');
+    g.addColorStop(0.35, col.mid);
+    g.addColorStop(1, col.edge);
     ctx.fillStyle = g;
     ctx.beginPath();
     ctx.arc(cx, cy, rad, 0, Math.PI * 2);
@@ -174,7 +186,7 @@
 
     // 旋转光环
     const ringA = 0.45 + 0.35 * Math.sin(now / 200);
-    ctx.strokeStyle = 'rgba(255, 214, 64, ' + ringA + ')';
+    ctx.strokeStyle = 'rgba(' + col.rgb + ', ' + ringA + ')';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.arc(cx, cy, rad * 1.7, now / 600, now / 600 + Math.PI * 1.4);

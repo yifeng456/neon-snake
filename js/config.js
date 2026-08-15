@@ -9,7 +9,9 @@
     MIN_TICK_MS: 80,
     FOODS_PER_LEVEL: 3,
     POINTS_PER_FOOD: 10,
-    FOOD_MOVE_INTERVAL: 2,
+    FOOD_MOVE_BASE: 5,
+    FOOD_MOVE_MIN: 2,
+    FOOD_MOVE_STEP: 3,
     MAX_QUEUE: 2,
     BEST_KEY: 'snake-neon-best-v1',
     MUTE_KEY: 'snake-neon-muted-v1'

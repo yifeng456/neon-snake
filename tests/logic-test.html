@@ -189,19 +189,37 @@
         }
       });
 
-      test('食物每 2 步移动一次', function () {
+      test('食物移动间隔随蛇长递减', function () {
+        const i1 = S.foodMoveInterval(4);
+        const i2 = S.foodMoveInterval(10);
+        const i3 = S.foodMoveInterval(16);
+        ok(i2 < i1, '蛇变长后间隔减小');
+        eq(i3, cfg.FOOD_MOVE_MIN, '到达最小间隔');
+        ok(i3 >= 2, '食物始终慢于蛇（间隔 >= 2）');
+      });
+
+      test('食物按当前间隔移动', function () {
         const g = S.createGame();
-        g.snake = [{ x: 10, y: 10 }, { x: 9, y: 10 }];
+        g.snake = [
+          { x: 10, y: 10 },
+          { x: 9, y: 10 },
+          { x: 8, y: 10 },
+          { x: 7, y: 10 }
+        ];
         g.direction = { x: 1, y: 0 };
         g.queue = [];
         g.food = { x: 5, y: 10 };
         g.obstacles = [];
         g.foodMoveCounter = 0;
-        const r1 = S.step(g);
-        ok(r1.state.food.x === 5 && r1.state.food.y === 10, '第一步食物不移动');
-        const r2 = S.step(r1.state);
-        ok(r2.state.food.x !== 5 || r2.state.food.y !== 10, '第二步食物移动');
-        ok(!occupiedBy(r2.state, r2.state.food.x, r2.state.food.y), '移动后食物不与蛇或障碍重叠');
+        const interval = S.foodMoveInterval(g.snake.length);
+        let r = { state: g };
+        for (let i = 0; i < interval - 1; i++) {
+          r = S.step(r.state);
+        }
+        ok(r.state.food.x === 5 && r.state.food.y === 10, '间隔到达前食物不移动');
+        r = S.step(r.state);
+        ok(r.state.food.x !== 5 || r.state.food.y !== 10, '间隔到达后食物移动');
+        ok(!occupiedBy(r.state, r.state.food.x, r.state.food.y), '移动后食物不与蛇或障碍重叠');
       });
 
       test('食物优先远离蛇头', function () {
