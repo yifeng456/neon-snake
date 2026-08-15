@@ -33,6 +33,7 @@
       itemMoveCounter: state.itemMoveCounter,
       invisibleSteps: state.invisibleSteps,
       freezeSteps: state.freezeSteps,
+      foodFreezeSteps: state.foodFreezeSteps,
       bullets: state.bullets,
       brokenObstacles: state.brokenObstacles.slice(),
       obstacles: state.obstacles.map(function (c) { return { x: c.x, y: c.y }; }),
@@ -192,11 +193,13 @@
     if (state.bullets <= 0) {
       return null;
     }
+    state.bullets -= 1; // 每次射击消耗一颗（无论是否命中）
     const head = state.snake[0];
     const dir = state.direction;
     let x = head.x + dir.x;
     let y = head.y + dir.y;
     while (inside(x, y)) {
+      // 命中障碍物：击碎
       const idx = state.obstacles.findIndex(function (o) {
         return o.x === x && o.y === y;
       });
@@ -207,13 +210,17 @@
           state.brokenObstacles.push(key);
         }
         state.obstacles.splice(idx, 1);
-        state.bullets -= 1;
-        return { x: broken.x, y: broken.y };
+        return { type: 'obstacle', x: broken.x, y: broken.y };
+      }
+      // 命中食物：食物冻结 1 秒
+      if (state.food && state.food.x === x && state.food.y === y) {
+        state.foodFreezeSteps = Math.round(cfg.FOOD_FREEZE_MS / state.tickMs);
+        return { type: 'food', x: x, y: y };
       }
       x += dir.x;
       y += dir.y;
     }
-    return null;
+    return { type: 'miss' };
   }
 
   function queueDirection(state, dir) {
@@ -273,6 +280,10 @@
     if (frozen) {
       next.freezeSteps -= 1;
     }
+    const foodFrozen = next.foodFreezeSteps > 0;
+    if (foodFrozen) {
+      next.foodFreezeSteps -= 1;
+    }
 
     const head = next.snake[0];
     let newHead = {
@@ -288,7 +299,15 @@
 
     const willEat = !!next.food && same(newHead, next.food);
     const willTakeItem = !!next.item && same(newHead, next.item);
-    const bodyToCheck = willEat ? next.snake : next.snake.slice(0, -1);
+    // 隐身时自身也无碰撞体积，可穿过自己身体
+    let bodyToCheck;
+    if (invisible) {
+      bodyToCheck = [];
+    } else if (willEat) {
+      bodyToCheck = next.snake;
+    } else {
+      bodyToCheck = next.snake.slice(0, -1);
+    }
     // 隐身时可穿过障碍物
     const obstacles = invisible ? [] : next.obstacles;
     const hit = hitPoint(newHead, bodyToCheck, obstacles);
@@ -358,7 +377,7 @@
       next.foodMoveCounter = 0;
     } else {
       // 冻结期间食物停止移动
-      if (!frozen) {
+      if (!frozen && !foodFrozen) {
         next.foodMoveCounter += 1;
         if (next.foodMoveCounter >= foodMoveInterval(next.snake.length)) {
           const moved = moveFood(next);
@@ -402,6 +421,7 @@
       itemMoveCounter: 0,
       invisibleSteps: 0,
       freezeSteps: 0,
+      foodFreezeSteps: 0,
       bullets: 0,
       brokenObstacles: [],
       obstacles: buildObstacles(1),

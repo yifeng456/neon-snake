@@ -226,11 +226,16 @@
       return;
     }
     const head = state.snake[0];
-    const broken = Snake.shoot(state);
-    if (broken) {
-      Snake.render.spawnShootEffect(head.x, head.y, broken.x, broken.y);
-      Snake.audio.play('shoot');
-      updatePowerHud();
+    const result = Snake.shoot(state);
+    if (!result) {
+      return;
+    }
+    Snake.audio.play('shoot');
+    updatePowerHud();
+    if (result.type === 'obstacle') {
+      Snake.render.spawnShootEffect(head.x, head.y, result.x, result.y);
+    } else if (result.type === 'food') {
+      Snake.render.spawnFreezeEffect(result.x, result.y);
     }
   }
 

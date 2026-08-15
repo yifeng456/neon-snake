@@ -334,6 +334,51 @@
         ok(cur.freezeSteps < 100, '冻结倒计时递减');
       });
 
+      test('子弹射击食物使其冻结1秒', function () {
+        const g = S.createGame();
+        g.bullets = 5;
+        g.snake = [{ x: 5, y: 5 }, { x: 4, y: 5 }, { x: 3, y: 5 }, { x: 2, y: 5 }];
+        g.direction = { x: 1, y: 0 };
+        g.food = { x: 8, y: 5 };
+        g.obstacles = [];
+        const r = S.shoot(g);
+        ok(r && r.type === 'food', '命中食物');
+        eq(g.bullets, 4, '消耗子弹');
+        ok(g.foodFreezeSteps > 0, '食物进入冻结');
+      });
+
+      test('子弹空射也消耗', function () {
+        const g = S.createGame();
+        g.bullets = 3;
+        g.snake = [{ x: 5, y: 5 }, { x: 4, y: 5 }, { x: 3, y: 5 }, { x: 2, y: 5 }];
+        g.direction = { x: 1, y: 0 };
+        g.food = { x: 20, y: 20 };
+        g.obstacles = [];
+        const r = S.shoot(g);
+        ok(r && r.type === 'miss', '空射返回 miss');
+        eq(g.bullets, 2, '消耗一颗子弹');
+      });
+
+      test('隐身时能穿过自己身体', function () {
+        const g = S.createGame();
+        g.invisibleSteps = 100;
+        g.snake = [
+          { x: 5, y: 5 },
+          { x: 5, y: 4 },
+          { x: 4, y: 4 },
+          { x: 4, y: 5 },
+          { x: 4, y: 6 },
+          { x: 5, y: 6 }
+        ];
+        g.direction = { x: 0, y: -1 };
+        g.queue = [];
+        g.food = { x: 20, y: 20 };
+        g.obstacles = [];
+        const r = S.step(g);
+        ok(r.state.phase !== 'ended', '隐身时穿过自己不死');
+        eq(r.state.snake[0].y, 4, '蛇头进入身体位置');
+      });
+
       const passCount = results.filter(function (r) { return r.ok; }).length;
       document.getElementById('summary').textContent =
         passCount + ' / ' + results.length + ' 通过';

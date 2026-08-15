@@ -16,6 +16,7 @@
     ITEM_MOVE_INTERVAL: 5,
     INVISIBLE_MS: 30000,
     FREEZE_MS: 10000,
+    FOOD_FREEZE_MS: 1000,
     BULLETS_ON_PICKUP: 10,
     MAX_QUEUE: 2,
     BEST_KEY: 'snake-neon-best-v1',

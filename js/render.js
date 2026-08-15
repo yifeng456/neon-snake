@@ -186,7 +186,7 @@
       return;
     }
     const cell = cssSize / cfg.GRID_SIZE;
-    const frozen = state.freezeSteps > 0;
+    const frozen = state.freezeSteps > 0 || state.foodFreezeSteps > 0;
     // 平滑插值食物位置
     const fx = prevFood ? prevFood.x + (state.food.x - prevFood.x) * interpT : state.food.x;
     const fy = prevFood ? prevFood.y + (state.food.y - prevFood.y) * interpT : state.food.y;
